@@ -27,7 +27,6 @@
       --gold: #ffd166;
       --shadow: rgba(255, 91, 189, 0.28);
       --button: rgba(36, 21, 40, 0.84);
-      --timer-progress: 0deg;
     }
 
     * { box-sizing: border-box; }
@@ -61,19 +60,6 @@
         linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px);
       background-size: 42px 42px;
       mask-image: linear-gradient(180deg, rgba(0,0,0,0.55), transparent 78%);
-    }
-
-    body::after {
-      content: "";
-      position: fixed;
-      width: 310px;
-      height: 310px;
-      right: -120px;
-      top: 80px;
-      border-radius: 999px;
-      background: radial-gradient(circle, rgba(255, 91, 189, 0.2), transparent 68%);
-      pointer-events: none;
-      filter: blur(4px);
     }
 
     .app {
@@ -155,9 +141,9 @@
     .timer-card {
       position: relative;
       overflow: hidden;
-      padding: 20px 18px 18px;
+      padding: 20px;
       display: grid;
-      gap: 18px;
+      gap: 14px;
       background:
         linear-gradient(145deg, rgba(255, 91, 189, 0.16), transparent 34%),
         linear-gradient(315deg, rgba(53, 230, 196, 0.12), transparent 38%),
@@ -204,76 +190,14 @@
       white-space: nowrap;
     }
 
-    .dial {
-      width: min(78vw, 360px);
-      aspect-ratio: 1;
-      margin: 4px auto 2px;
-      border-radius: 50%;
-      position: relative;
-      display: grid;
-      place-items: center;
-      background:
-        conic-gradient(from -90deg, #ff6bbd var(--timer-progress), rgba(255, 255, 255, 0.08) 0),
-        radial-gradient(circle at 35% 26%, rgba(255, 255, 255, 0.18), transparent 26%),
-        linear-gradient(145deg, rgba(255, 91, 189, 0.18), rgba(53, 230, 196, 0.08));
-      box-shadow:
-        0 0 34px rgba(255, 91, 189, 0.2),
-        inset 0 0 30px rgba(255, 255, 255, 0.04);
-    }
-
-    .timer-card.rest .dial {
-      background:
-        conic-gradient(from -90deg, #35e6c4 var(--timer-progress), rgba(255, 255, 255, 0.08) 0),
-        radial-gradient(circle at 35% 26%, rgba(255, 255, 255, 0.18), transparent 26%),
-        linear-gradient(145deg, rgba(53, 230, 196, 0.18), rgba(139, 77, 255, 0.12));
-      box-shadow:
-        0 0 34px rgba(53, 230, 196, 0.2),
-        inset 0 0 30px rgba(255, 255, 255, 0.04);
-    }
-
-    .dial::before {
-      content: "";
-      position: absolute;
-      inset: 13px;
-      border-radius: inherit;
-      background:
-        radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.08), transparent 20%),
-        linear-gradient(180deg, rgba(16, 9, 21, 0.98), rgba(7, 3, 10, 0.98));
-      box-shadow:
-        inset 0 0 35px rgba(0, 0, 0, 0.72),
-        0 0 0 1px rgba(255, 255, 255, 0.06);
-    }
-
-    .dial::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      box-shadow: inset 0 0 0 10px rgba(0, 0, 0, 0.12);
-      pointer-events: none;
-    }
-
-    .dial-core {
-      position: relative;
-      z-index: 1;
-      width: calc(100% - 54px);
-      aspect-ratio: 1;
-      border-radius: inherit;
-      display: grid;
-      place-items: center;
-      align-content: center;
-      gap: 8px;
-      text-align: center;
-    }
-
     .clock {
       font-variant-numeric: tabular-nums;
       text-align: center;
       font-weight: 900;
       line-height: 0.95;
-      font-size: clamp(3.9rem, 19vw, 7.2rem);
+      font-size: clamp(4.8rem, 26vw, 9.8rem);
       letter-spacing: 0;
+      padding: 12px 0 6px;
       background: linear-gradient(180deg, #ffffff 0%, #ffc8ec 42%, #ff6bbd 100%);
       -webkit-background-clip: text;
       background-clip: text;
@@ -281,15 +205,8 @@
       text-shadow: 0 0 36px rgba(255, 91, 189, 0.16);
     }
 
-    .dial-caption {
-      color: var(--muted);
-      font-size: 0.78rem;
-      font-weight: 800;
-      text-transform: uppercase;
-    }
-
     .progress {
-      height: 12px;
+      height: 18px;
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 999px;
       background: rgba(4, 2, 5, 0.72);
@@ -363,13 +280,9 @@
     }
 
     .settings {
-      padding: 18px;
+      padding: 16px;
       display: grid;
-      gap: 14px;
-      border-color: rgba(255, 126, 207, 0.24);
-      background:
-        linear-gradient(180deg, rgba(255, 126, 207, 0.07), rgba(255, 255, 255, 0.015)),
-        rgba(25, 13, 30, 0.78);
+      gap: 12px;
     }
 
     .setting-grid {
@@ -395,25 +308,22 @@
 
     input, textarea, select {
       width: 100%;
-      border: 1px solid rgba(255, 126, 207, 0.3);
-      background: rgba(5, 2, 8, 0.74);
+      border: 1px solid var(--line-soft);
+      background: rgba(7, 4, 10, 0.72);
       color: var(--text);
       font-size: 1.1rem;
       font-weight: 900;
-      box-shadow:
-        inset 0 1px 14px rgba(0, 0, 0, 0.42),
-        0 0 0 1px rgba(255, 255, 255, 0.015);
+      box-shadow: inset 0 1px 12px rgba(0, 0, 0, 0.34);
     }
 
     input {
       min-height: 48px;
       text-align: center;
-      padding: 0 13px;
     }
 
     textarea {
       min-height: 96px;
-      padding: 13px;
+      padding: 12px;
       resize: vertical;
       font-size: 0.95rem;
       line-height: 1.4;
@@ -424,15 +334,13 @@
       min-height: 48px;
       padding: 0 12px;
       font-size: 0.95rem;
-      cursor: pointer;
     }
 
     input:focus, textarea:focus, select:focus {
       outline: none;
-      border-color: rgba(255, 126, 207, 0.85);
+      border-color: rgba(255, 209, 102, 0.7);
       box-shadow:
-        0 0 0 3px rgba(255, 126, 207, 0.12),
-        0 0 24px rgba(255, 91, 189, 0.18),
+        0 0 0 3px rgba(255, 209, 102, 0.1),
         inset 0 1px 12px rgba(0, 0, 0, 0.34);
     }
 
@@ -496,16 +404,9 @@
     }
 
     .archive {
-      position: relative;
-      overflow: hidden;
-      padding: 18px;
+      padding: 16px;
       display: grid;
-      gap: 14px;
-      border-color: rgba(255, 126, 207, 0.28);
-      background:
-        radial-gradient(circle at 14% 0%, rgba(255, 91, 189, 0.18), transparent 34%),
-        linear-gradient(180deg, rgba(255, 126, 207, 0.06), rgba(255, 255, 255, 0.012)),
-        rgba(22, 10, 27, 0.82);
+      gap: 12px;
     }
 
     .archive-head {
@@ -513,7 +414,6 @@
       justify-content: space-between;
       align-items: baseline;
       gap: 10px;
-      padding-bottom: 2px;
     }
 
     .archive-head h2 {
@@ -530,7 +430,7 @@
 
     .archive-actions {
       display: grid;
-      grid-template-columns: 1.45fr 1fr 1fr;
+      grid-template-columns: repeat(3, 1fr);
       gap: 8px;
     }
 
@@ -540,15 +440,6 @@
       gap: 8px;
     }
 
-    .archive-actions button,
-    .update-actions button {
-      min-height: 50px;
-      padding: 0 10px;
-      font-size: 0.82rem;
-      line-height: 1.15;
-      white-space: nowrap;
-    }
-
     .update-actions button[disabled] {
       opacity: 0.45;
       cursor: not-allowed;
@@ -556,10 +447,6 @@
 
     .update-status {
       white-space: pre-line;
-      border-radius: 18px;
-      background:
-        linear-gradient(135deg, rgba(255, 209, 102, 0.08), rgba(255, 126, 207, 0.04)),
-        rgba(7, 4, 10, 0.52);
     }
 
     .notice {
@@ -597,527 +484,388 @@
       flex: 0 0 auto;
     }
 
-    /* Poster-style Astra Pulse screen */
-    .app {
-      width: min(430px, 100%);
-      gap: 14px;
-    }
-
-    .topbar {
-      display: none;
-    }
-
-    .timer-card {
-      min-height: 640px;
-      padding: 24px 18px 18px;
-      border-radius: 34px;
-      gap: 22px;
-      background:
-        radial-gradient(circle at 50% 34%, rgba(255, 91, 189, 0.2), transparent 32%),
-        radial-gradient(circle at 76% 34%, rgba(98, 223, 255, 0.16), transparent 28%),
-        linear-gradient(180deg, rgba(20, 13, 31, 0.98), rgba(9, 5, 14, 0.98));
-      border-color: rgba(255, 126, 207, 0.5);
-      box-shadow:
-        0 28px 70px rgba(0, 0, 0, 0.42),
-        0 0 42px rgba(255, 91, 189, 0.15),
-        inset 0 0 0 1px rgba(255, 255, 255, 0.04);
-    }
-
-    .timer-card::before {
-      inset: 14px;
-      border-radius: 28px;
-      opacity: 0.72;
-    }
-
-    .phone-nav {
-      position: relative;
-      z-index: 1;
-      display: grid;
-      grid-template-columns: 44px 1fr 44px;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .nav-icon {
-      width: 44px;
-      height: 44px;
-      min-height: 44px;
-      border-radius: 999px;
-      display: grid;
-      place-items: center;
-      padding: 0;
-      background: rgba(255, 255, 255, 0.04);
-      border-color: rgba(255, 255, 255, 0.1);
-      box-shadow: none;
-      color: rgba(255, 244, 251, 0.9);
-      font-size: 1.25rem;
-    }
-
-    .phone-title {
-      display: grid;
-      justify-items: center;
-      gap: 6px;
-      color: #fff9fd;
-      font-weight: 900;
-      font-size: 1.05rem;
-      text-transform: uppercase;
-    }
-
-    .pulse-mark {
-      color: #ff6bbd;
-      font-size: 1.15rem;
-      line-height: 1;
-      text-shadow: 0 0 14px rgba(255, 91, 189, 0.85);
-    }
-
-    .phase-row {
-      display: none;
-    }
-
-    .dial {
-      width: min(78vw, 315px);
-      margin: 18px auto 10px;
-      background:
-        conic-gradient(from -35deg, #ff62c8 var(--timer-progress), #68e8ff var(--timer-progress), rgba(255, 255, 255, 0.08) 0),
-        radial-gradient(circle at 35% 26%, rgba(255, 255, 255, 0.2), transparent 22%),
-        linear-gradient(145deg, rgba(255, 91, 189, 0.22), rgba(104, 232, 255, 0.12));
-      box-shadow:
-        0 0 44px rgba(255, 91, 189, 0.22),
-        0 0 54px rgba(104, 232, 255, 0.1),
-        inset 0 0 30px rgba(255, 255, 255, 0.05);
-    }
-
-    .timer-card.rest .dial {
-      background:
-        conic-gradient(from -35deg, #35e6c4 var(--timer-progress), #8b4dff var(--timer-progress), rgba(255, 255, 255, 0.08) 0),
-        radial-gradient(circle at 35% 26%, rgba(255, 255, 255, 0.2), transparent 22%),
-        linear-gradient(145deg, rgba(53, 230, 196, 0.2), rgba(139, 77, 255, 0.14));
-    }
-
-    .dial::after {
-      width: 28px;
-      height: 28px;
-      inset: auto 42px 64px auto;
-      border: 0;
-      background: radial-gradient(circle, #ffc5ef 0%, #ff6bbd 56%, #7ee8ff 100%);
-      box-shadow:
-        0 0 18px rgba(255, 91, 189, 0.9),
-        0 0 28px rgba(104, 232, 255, 0.42);
-    }
-
-    .dial-core {
-      gap: 10px;
-    }
-
-    .clock {
-      color: #fff8fd;
-      background: none;
-      text-shadow: 0 0 34px rgba(255, 255, 255, 0.1);
-      font-size: clamp(4.1rem, 18vw, 6.4rem);
-    }
-
-    .dial-caption {
-      color: #ff9bd8;
-      font-size: 0.9rem;
-      font-weight: 900;
-    }
-
-    .dial .round {
-      margin-top: 4px;
-      padding: 7px 18px;
-      border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      background: rgba(255, 255, 255, 0.05);
-      color: #ead8e9;
-      font-size: 0.78rem;
-      font-weight: 900;
-    }
-
-    .timer-stats {
-      position: relative;
-      z-index: 1;
-      display: grid;
-      grid-template-columns: 1fr 92px 1fr;
-      align-items: center;
-      gap: 12px;
-      padding: 16px 10px 18px;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
-    }
-
-    .timer-stat {
-      display: grid;
-      gap: 4px;
-      text-align: center;
-      font-weight: 900;
-    }
-
-    .timer-stat strong {
-      color: #7ee8ff;
-      font-size: 1.35rem;
-      line-height: 1;
-    }
-
-    .timer-stat:last-child strong {
-      color: #ff8ed1;
-    }
-
-    .timer-stat span {
-      color: var(--muted);
-      font-size: 0.72rem;
-      text-transform: uppercase;
-    }
-
-    .play-button {
-      width: 88px;
-      height: 88px;
-      min-height: 88px;
-      border-radius: 999px;
-      display: grid;
-      place-items: center;
-      padding: 0 0 0 5px;
-      color: #ffc5ec;
-      font-size: 2.1rem;
-      background:
-        radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.12), transparent 32%),
-        linear-gradient(145deg, rgba(255, 91, 189, 0.42), rgba(139, 77, 255, 0.24));
-      border: 2px solid rgba(255, 126, 207, 0.82);
-      box-shadow:
-        0 0 26px rgba(255, 91, 189, 0.38),
-        inset 0 0 22px rgba(0, 0, 0, 0.48);
-    }
-
-    .icon-strip {
-      position: relative;
-      z-index: 1;
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      padding: 10px;
-      border: 1px solid rgba(255, 126, 207, 0.22);
-      border-radius: 16px;
-      background: rgba(255, 255, 255, 0.035);
-    }
-
-    .icon-strip button {
-      min-height: 44px;
-      border-radius: 12px;
-      box-shadow: none;
-      background: transparent;
-      color: #d9b6d8;
-      font-size: 1.45rem;
-      padding: 0;
-    }
-
-    .progress {
-      height: 7px;
-      opacity: 0.68;
-      margin-top: -2px;
-    }
-
-    .notice,
-    .settings,
-    .archive {
-      border-radius: 24px;
-    }
-
     @media (max-width: 430px) {
       body { padding-left: 10px; padding-right: 10px; }
-      .timer-card { min-height: 615px; padding: 20px 14px 16px; }
-      .dial { width: min(82vw, 310px); }
-      .timer-stats { grid-template-columns: 1fr 82px 1fr; gap: 8px; }
-      .play-button { width: 80px; height: 80px; min-height: 80px; }
+      .timer-card { padding: 14px; }
       .setting-grid { grid-template-columns: 1fr; }
       .status-grid { grid-template-columns: 1fr; }
       .quick { grid-template-columns: 1fr; }
       .mode-actions { grid-template-columns: 1fr; }
       .archive-actions { grid-template-columns: 1fr; }
       .controls { grid-template-columns: 1fr; }
-      .clock { font-size: clamp(3.5rem, 21vw, 6.4rem); }
+      .clock { font-size: clamp(4.4rem, 30vw, 7rem); }
       .install { align-items: stretch; flex-direction: column; }
     }
-
-    /* Finaler Poster-Look: naeher am Referenzbild mit Neon-Phone-Screen. */
+    /* Astra Pulse 1.2 - poster inspired app surface */
     body {
+      min-height: 100vh;
       background:
-        radial-gradient(circle at 50% 14%, rgba(255, 89, 186, 0.22), transparent 26%),
-        radial-gradient(circle at 18% 45%, rgba(255, 89, 186, 0.18), transparent 32%),
-        radial-gradient(circle at 82% 42%, rgba(112, 126, 255, 0.16), transparent 30%),
-        linear-gradient(135deg, #120515 0%, #20091e 38%, #090712 72%, #05050b 100%);
+        radial-gradient(circle at 25% 18%, rgba(255, 56, 168, 0.24), transparent 34%),
+        radial-gradient(circle at 76% 22%, rgba(104, 107, 255, 0.18), transparent 30%),
+        linear-gradient(115deg, #220017 0%, #100814 48%, #050911 100%);
     }
 
     .app {
-      width: min(440px, 100%);
-      gap: 16px;
+      width: min(940px, 100%);
+      gap: 18px;
+      padding-top: 18px;
+    }
+
+    .topbar.poster-hero {
+      position: relative;
+      display: grid;
+      gap: 22px;
+      min-height: 360px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 84, 190, 0.42);
+      border-radius: 34px;
+      padding: clamp(18px, 4vw, 32px);
+      background:
+        radial-gradient(circle at 50% 76%, rgba(255, 69, 193, 0.40), transparent 18%),
+        radial-gradient(circle at 35% 70%, rgba(255, 40, 148, 0.26), transparent 26%),
+        radial-gradient(circle at 70% 62%, rgba(84, 134, 255, 0.22), transparent 26%),
+        linear-gradient(180deg, rgba(23, 14, 38, 0.96), rgba(8, 5, 15, 0.98));
+      box-shadow: 0 0 36px rgba(255, 69, 193, 0.18), inset 0 0 56px rgba(255, 255, 255, 0.04);
+    }
+
+    .topbar.poster-hero::before,
+    .topbar.poster-hero::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: 82px;
+      transform: translateX(-50%);
+      width: min(720px, 92%);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 84, 220, 0.34);
+      box-shadow: 0 0 30px rgba(255, 84, 220, 0.18);
+      pointer-events: none;
+    }
+
+    .topbar.poster-hero::after {
+      width: min(520px, 68%);
+      border-color: rgba(109, 128, 255, 0.32);
+      box-shadow: 0 0 34px rgba(109, 128, 255, 0.16);
+    }
+
+    .brand-row {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .poster-mark {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      letter-spacing: 0.18em;
+      color: rgba(255, 255, 255, 0.86);
+      text-transform: uppercase;
+    }
+
+    .poster-a {
+      display: block;
+      margin: 0 auto 8px;
+      width: 86px;
+      height: 52px;
+      clip-path: polygon(50% 0, 100% 100%, 70% 100%, 50% 48%, 30% 100%, 0 100%);
+      background: linear-gradient(135deg, #ff5fc8 12%, #7c6dff 88%);
+      filter: drop-shadow(0 0 18px rgba(255, 78, 208, 0.54));
+    }
+
+    .poster-copy {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      justify-items: center;
+      align-content: center;
+      text-align: center;
+      min-height: 230px;
+    }
+
+    .poster-title {
+      font-size: clamp(3.8rem, 12vw, 8.8rem);
+      line-height: 0.9;
+      font-weight: 950;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, #ff62c4 8%, #c66cff 48%, #86a8ff 92%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 0 26px rgba(255, 83, 203, 0.28);
+    }
+
+    .poster-sub {
+      margin-top: 14px;
+      font-size: clamp(1.1rem, 3.2vw, 2.1rem);
+      font-weight: 850;
+      letter-spacing: 0.34em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.92);
+      text-shadow: 0 0 18px rgba(255, 116, 214, 0.35);
+    }
+
+    .poster-foot {
+      margin-top: 34px;
+      font-size: clamp(1rem, 2.8vw, 1.55rem);
+      letter-spacing: 0.16em;
+      color: rgba(255, 255, 255, 0.86);
+    }
+
+    .notice.card,
+    .settings.card,
+    .archive.card,
+    .updates.card {
+      width: min(610px, 100%);
+      justify-self: center;
+      background: rgba(25, 8, 28, 0.76);
+      backdrop-filter: blur(18px);
     }
 
     .timer-card {
-      min-height: 690px;
-      padding: 25px 18px 18px;
+      position: relative;
+      justify-self: center;
+      width: min(390px, 100%);
+      min-height: 640px;
+      padding: 28px 24px 24px;
       border-radius: 42px;
-      gap: 20px;
       overflow: hidden;
       background:
-        radial-gradient(circle at 50% 42%, rgba(255, 91, 189, 0.2), transparent 38%),
-        radial-gradient(circle at 84% 41%, rgba(93, 218, 255, 0.16), transparent 26%),
-        linear-gradient(180deg, rgba(18, 13, 30, 0.99) 0%, rgba(11, 7, 17, 0.99) 62%, rgba(7, 4, 12, 0.99) 100%);
-      border: 2px solid rgba(255, 153, 219, 0.42);
-      box-shadow:
-        0 30px 80px rgba(0, 0, 0, 0.62),
-        0 0 54px rgba(255, 91, 189, 0.22),
-        inset 0 0 0 10px rgba(255, 255, 255, 0.018),
-        inset 0 0 46px rgba(255, 91, 189, 0.08);
+        linear-gradient(180deg, rgba(18, 16, 34, 0.98), rgba(12, 6, 22, 0.99)),
+        radial-gradient(circle at 50% 34%, rgba(255, 87, 203, 0.20), transparent 34%);
+      border: 1px solid rgba(255, 151, 225, 0.34);
+      box-shadow: 0 22px 55px rgba(0, 0, 0, 0.62), 0 0 38px rgba(255, 70, 202, 0.22), inset 0 0 34px rgba(255, 255, 255, 0.04);
     }
 
     .timer-card::before {
       content: "";
       position: absolute;
-      inset: 14px;
-      border-radius: 34px;
-      border: 1px solid rgba(255, 174, 229, 0.18);
-      background:
-        radial-gradient(circle at 50% 97%, rgba(255, 91, 189, 0.16), transparent 23%),
-        linear-gradient(90deg, rgba(255, 91, 189, 0.13), transparent 25%, transparent 75%, rgba(104, 232, 255, 0.12));
-      opacity: 1;
+      inset: 12px;
+      border-radius: 32px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
       pointer-events: none;
     }
 
-    .timer-card::after {
-      content: "";
+    .phone-head {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 28px 1fr 28px;
+      align-items: center;
+      color: rgba(255, 255, 255, 0.86);
+      letter-spacing: 0.18em;
+      font-size: 0.86rem;
+      text-align: center;
+    }
+
+    .pulse-line {
+      position: relative;
+      z-index: 1;
+      margin: 12px 0 18px;
+      color: #ff67ca;
+      text-align: center;
+      text-shadow: 0 0 16px rgba(255, 103, 202, 0.6);
+    }
+
+    .timer-card .phase-row {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 30px;
+    }
+
+    .timer-card .phase,
+    .timer-card .round {
+      border-radius: 999px;
+      padding: 8px 14px;
+      background: rgba(255, 84, 187, 0.14);
+      border: 1px solid rgba(255, 119, 215, 0.32);
+      color: #ffd0ef;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-size: 0.78rem;
+    }
+
+    .timer-card .round {
+      background: rgba(111, 133, 255, 0.10);
+      color: rgba(255, 255, 255, 0.72);
+    }
+
+    .dial-wrap {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      place-items: center;
+      margin: 0 auto 26px;
+      width: min(300px, 78vw);
+      aspect-ratio: 1;
+    }
+
+    .orbit {
       position: absolute;
-      left: 12%;
-      right: 12%;
-      bottom: 124px;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255, 91, 189, 0.45), rgba(104, 232, 255, 0.32), transparent);
-      pointer-events: none;
+      inset: 0;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 78, 207, 0.18);
+      box-shadow: 0 0 22px rgba(255, 78, 207, 0.14);
     }
 
-    .phone-nav {
-      grid-template-columns: 48px 1fr 48px;
-      margin-bottom: 2px;
-      padding: 0 4px;
-    }
-
-    .nav-icon {
-      width: 48px;
-      height: 48px;
-      min-height: 48px;
-      border: 0;
-      background: transparent;
-      color: rgba(255, 255, 255, 0.88);
-      font-size: 1.42rem;
-    }
-
-    .phone-title {
-      gap: 8px;
-      color: #ffffff;
-      font-size: 1.08rem;
-      text-shadow: 0 0 18px rgba(255, 255, 255, 0.18);
-    }
-
-    .pulse-mark {
-      color: #ff66c8;
-      font-size: 1.22rem;
-      text-shadow: 0 0 18px rgba(255, 91, 189, 0.9);
+    .orbit-b {
+      inset: 28px;
+      border-color: rgba(121, 151, 255, 0.18);
     }
 
     .dial {
-      width: min(82vw, 328px);
+      position: relative;
+      display: grid;
+      place-items: center;
+      align-content: center;
+      width: 230px;
       aspect-ratio: 1;
-      margin: 14px auto 4px;
       border-radius: 50%;
-      padding: 13px;
-      background:
-        conic-gradient(from -42deg, rgba(255, 255, 255, 0.28) 0deg, transparent 48deg, transparent 360deg),
-        conic-gradient(from -38deg, #ff54bf 0deg, #ff63c7 92deg, #945bff 188deg, #70ecff 295deg, #ff54bf 360deg);
-      box-shadow:
-        0 0 22px rgba(255, 91, 189, 0.5),
-        0 0 48px rgba(139, 77, 255, 0.28),
-        0 0 74px rgba(104, 232, 255, 0.16),
-        inset 0 0 18px rgba(255, 255, 255, 0.07);
-    }
-
-    .timer-card.rest .dial {
-      background:
-        conic-gradient(from -42deg, rgba(255, 255, 255, 0.26) 0deg, transparent 48deg, transparent 360deg),
-        conic-gradient(from -38deg, #34e7c5 0deg, #7ee8ff 112deg, #8a5dff 220deg, #ff71c8 360deg);
+      background: radial-gradient(circle, rgba(17, 13, 30, 0.98) 58%, rgba(255, 76, 202, 0.12) 100%);
+      box-shadow: inset 0 0 32px rgba(255, 82, 198, 0.13), 0 0 36px rgba(93, 174, 255, 0.16);
     }
 
     .dial::before {
       content: "";
       position: absolute;
-      inset: 13px;
-      border-radius: 50%;
-      background:
-        radial-gradient(circle at 50% 42%, rgba(255, 91, 189, 0.13), transparent 45%),
-        linear-gradient(180deg, rgba(15, 10, 25, 0.98), rgba(5, 4, 10, 0.99));
-      box-shadow:
-        inset 0 0 38px rgba(0, 0, 0, 0.74),
-        inset 0 0 16px rgba(255, 255, 255, 0.04);
-      transform: none;
+      inset: -12px;
+      border-radius: inherit;
+      background: conic-gradient(from -40deg, #ff66c9, #b86dff 42%, #72e7ff 72%, #ff66c9 100%);
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 14px), #000 calc(100% - 13px));
+      mask: radial-gradient(farthest-side, transparent calc(100% - 14px), #000 calc(100% - 13px));
+      filter: drop-shadow(0 0 12px rgba(255, 102, 201, 0.62));
     }
 
     .dial::after {
       content: "";
       position: absolute;
-      top: 36px;
-      right: 54px;
-      width: 25px;
-      height: 25px;
+      right: 18px;
+      top: 20px;
+      width: 22px;
+      height: 22px;
       border-radius: 50%;
-      background: radial-gradient(circle, #ffd2f0 0%, #ff6fc8 55%, #7de9ff 100%);
-      box-shadow:
-        0 0 16px rgba(255, 91, 189, 0.95),
-        0 0 28px rgba(104, 232, 255, 0.45);
-    }
-
-    .dial-core {
-      position: relative;
-      z-index: 1;
-      width: 100%;
-      height: 100%;
-      display: grid;
-      place-items: center;
-      align-content: center;
-      gap: 9px;
-      border-radius: 50%;
-      background: transparent;
+      background: linear-gradient(135deg, #ff8ce0, #c16cff);
+      box-shadow: 0 0 20px rgba(255, 130, 224, 0.8);
     }
 
     .clock {
-      font-size: clamp(4.55rem, 19vw, 6.75rem);
+      position: relative;
+      z-index: 1;
+      margin: 0;
+      font-size: clamp(3.5rem, 13vw, 4.8rem);
+      line-height: 0.9;
       color: #fff;
-      line-height: 0.96;
-      text-shadow:
-        0 0 20px rgba(255, 255, 255, 0.18),
-        0 0 38px rgba(255, 91, 189, 0.14);
+      text-shadow: 0 0 20px rgba(255, 255, 255, 0.22);
     }
 
-    .dial-caption {
-      color: #ff8fd3;
-      font-size: 1rem;
+    .dial-label {
+      position: relative;
+      z-index: 1;
+      margin-top: 10px;
+      color: #ff8fda;
+      font-weight: 850;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-size: 0.84rem;
+    }
+
+    .timer-footer {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 16px;
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .timer-footer span:not(.play-glyph) {
+      display: grid;
+      gap: 2px;
+      text-align: center;
+      color: rgba(255, 255, 255, 0.88);
       font-weight: 900;
     }
 
-    .dial .round {
-      margin-top: 6px;
-      padding: 8px 20px;
-      border-radius: 999px;
-      border-color: rgba(255, 164, 224, 0.28);
-      background: rgba(255, 255, 255, 0.035);
-      color: #f7d8ef;
-      box-shadow: inset 0 0 14px rgba(255, 91, 189, 0.08);
+    .timer-footer small {
+      color: #ff8bd6;
+      font-size: 0.66rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
     }
 
-    .timer-stats {
-      grid-template-columns: 1fr 90px 1fr;
-      gap: 10px;
-      margin: 0 -4px;
-      padding: 17px 9px 18px;
-      border-top: 1px solid rgba(255, 255, 255, 0.09);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      background:
-        linear-gradient(90deg, rgba(104, 232, 255, 0.08), rgba(255, 91, 189, 0.09), rgba(255, 199, 113, 0.05));
-    }
-
-    .timer-stat strong {
-      font-size: 1.42rem;
-      color: #73eaff;
-      text-shadow: 0 0 14px rgba(104, 232, 255, 0.34);
-    }
-
-    .timer-stat:last-child strong {
-      color: #ff86d1;
-      text-shadow: 0 0 14px rgba(255, 91, 189, 0.34);
-    }
-
-    .timer-stat span {
-      color: rgba(255, 225, 246, 0.72);
-      font-size: 0.74rem;
-      font-weight: 900;
-    }
-
-    .play-button {
-      width: 88px;
-      height: 88px;
-      min-height: 88px;
+    .play-glyph {
+      display: grid;
+      place-items: center;
+      width: 74px;
+      height: 74px;
       border-radius: 50%;
-      padding-left: 6px;
-      color: #ffe1f7;
-      font-size: 2.25rem;
-      background:
-        radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.2), transparent 28%),
-        linear-gradient(145deg, rgba(255, 91, 189, 0.54), rgba(137, 77, 255, 0.36) 68%, rgba(104, 232, 255, 0.18));
-      border: 2px solid rgba(255, 129, 211, 0.86);
-      box-shadow:
-        0 0 24px rgba(255, 91, 189, 0.58),
-        0 0 38px rgba(139, 77, 255, 0.28),
-        inset 0 0 22px rgba(0, 0, 0, 0.42);
+      color: white;
+      background: radial-gradient(circle, rgba(255, 116, 221, 0.34), rgba(120, 75, 255, 0.16));
+      border: 2px solid rgba(255, 112, 219, 0.52);
+      box-shadow: 0 0 28px rgba(255, 90, 214, 0.4), inset 0 0 18px rgba(255, 255, 255, 0.08);
     }
 
-    .icon-strip {
-      margin: 2px 8px 0;
-      padding: 11px;
-      border-radius: 19px;
-      border-color: rgba(255, 157, 221, 0.24);
-      background: rgba(255, 255, 255, 0.035);
-      box-shadow: inset 0 0 18px rgba(255, 91, 189, 0.045);
+    .timer-card .progress {
+      position: relative;
+      z-index: 1;
+      height: 10px;
+      margin-top: 22px;
+      background: rgba(0, 0, 0, 0.64);
     }
 
-    .icon-strip button {
-      color: #d9bedf;
-      font-size: 1.5rem;
+    .controls {
+      width: min(610px, 100%);
+      justify-self: center;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .progress {
-      margin: 6px 18px 0;
-      height: 8px;
-      border-radius: 999px;
-      background: rgba(0, 0, 0, 0.72);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      opacity: 1;
-    }
-
-    .progress .bar {
-      background: linear-gradient(90deg, #ff62c8, #a35dff, #72e8ff);
-      box-shadow: 0 0 18px rgba(255, 91, 189, 0.38);
-    }
-
-    @media (max-width: 430px) {
-      .timer-card {
-        min-height: 668px;
-        padding: 22px 14px 16px;
-        border-radius: 36px;
-      }
-
-      .timer-card::before {
-        inset: 11px;
-        border-radius: 29px;
-      }
-
-      .dial {
-        width: min(84vw, 318px);
-      }
-
-      .clock {
-        font-size: clamp(4.2rem, 20vw, 6.25rem);
-      }
+    @media (max-width: 680px) {
+      .brand-row { align-items: flex-start; }
+      .poster-title { font-size: clamp(3.1rem, 18vw, 5.2rem); }
+      .poster-sub { letter-spacing: 0.16em; }
+      .topbar.poster-hero { min-height: 330px; border-radius: 26px; }
+      .timer-card { min-height: 590px; border-radius: 34px; }
+      .dial { width: 210px; }
+      .controls { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
   <main class="app">
-    <header class="topbar">
-      <div class="brand">
-        <div class="logo" aria-hidden="true"><span>A</span></div>
-        <div>
-          <h1>Astra Pulse</h1>
-          <div class="subtitle">Version 1.3 &middot; Lokal. Werbefrei. Offline bereit.</div>
+    <header class="topbar poster-hero">
+      <div class="brand-row">
+        <div class="brand">
+          <div class="logo" aria-hidden="true"><span>A</span></div>
+          <div>
+            <h1>Astra Pulse</h1>
+            <div class="subtitle">Version 1.2 · Lokal. Werbefrei. Offline bereit.</div>
+          </div>
         </div>
+        <div class="pill" id="status">BEREIT</div>
       </div>
-      <div class="pill" id="status">BEREIT</div>
+      <div class="poster-copy" aria-label="Astra Pulse Android Testversion bereit">
+        <div class="poster-mark">
+          <span class="poster-a" aria-hidden="true"></span>
+          <strong>ASTRA</strong><br>
+          <small>PRODUCTIONS</small>
+        </div>
+        <div class="poster-title">ASTRA PULSE</div>
+        <div class="poster-sub">ANDROID TESTVERSION BEREIT</div>
+        <div class="poster-foot">Werbefrei. Offline. Privat.</div>
+      </div>
     </header>
 
     <section class="install card" id="installBox">
@@ -1130,42 +878,38 @@
       Pausen sind Teil des Timers, nicht optionaler Luxus.
     </section>
 
-    <section class="timer-card card" id="timerCard" aria-live="polite">
-      <div class="phone-nav">
-        <button class="nav-icon" type="button" aria-label="Menü">☰</button>
-        <div class="phone-title">
-          <span>INTERVALL</span>
-          <span class="pulse-mark">⌁</span>
-        </div>
-        <button class="nav-icon" type="button" aria-label="Einstellungen">⚙</button>
+    <section class="timer-card card" aria-live="polite">
+      <div class="phone-head">
+        <span aria-hidden="true">☰</span>
+        <strong>INTERVALL</strong>
+        <span aria-hidden="true">⚙</span>
       </div>
+      <div class="pulse-line" aria-hidden="true">⌁</div>
       <div class="phase-row">
         <div class="phase" id="phase">Aktiv</div>
+        <div class="round" id="round">Runde 1 von 3</div>
       </div>
-      <div class="dial">
-        <div class="dial-core">
+      <div class="dial-wrap">
+        <div class="orbit orbit-a" aria-hidden="true"></div>
+        <div class="orbit orbit-b" aria-hidden="true"></div>
+        <div class="dial">
           <div class="clock" id="clock">20:00</div>
-          <div class="dial-caption" id="dialCaption">ARBEIT</div>
-          <div class="round" id="round">RUNDE 1 / 3</div>
+          <div class="dial-label">Arbeit</div>
         </div>
       </div>
-      <div class="timer-stats">
-        <div class="timer-stat">
-          <strong id="restStat">10:00</strong>
-          <span>Pause</span>
-        </div>
-        <button class="play-button" id="start" type="button" aria-label="Timer starten">▶</button>
-        <div class="timer-stat">
-          <strong id="activeStat">20:00</strong>
-          <span id="activeStatLabel">Arbeit</span>
-        </div>
-      </div>
-      <div class="icon-strip" aria-label="Timer-Steuerung">
-        <button id="reset" type="button" aria-label="Zurücksetzen">↻</button>
-        <button id="skip" type="button" aria-label="Weiter">≫</button>
-        <button id="pause" type="button" aria-label="Pause">Ⅱ</button>
+      <div class="timer-footer">
+        <span><b>10:00</b><small>Pause</small></span>
+        <span class="play-glyph" aria-hidden="true">▶</span>
+        <span><b>20:00</b><small>Arbeit</small></span>
       </div>
       <div class="progress" id="progress" role="slider" aria-label="Fortschritt der aktuellen Phase" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0"><div class="bar" id="bar"></div></div>
+    </section>
+
+    <section class="controls">
+      <button class="primary" id="start">START</button>
+      <button class="warn" id="pause">PAUSE</button>
+      <button id="skip">WEITER</button>
+      <button class="danger" id="reset">RESET</button>
     </section>
 
     <section class="settings card">
@@ -1197,6 +941,7 @@
         <option value="Normal"></option>
         <option value="Speed"></option>
         <option value="Slow"></option>
+        <option value="Edge"></option>
         <option value="Pause"></option>
         <option value="Check"></option>
         <option value="Recovery"></option>
@@ -1267,10 +1012,8 @@
 
     const els = {
       status: document.getElementById("status"),
-      timerCard: document.getElementById("timerCard"),
       phase: document.getElementById("phase"),
       clock: document.getElementById("clock"),
-      dialCaption: document.getElementById("dialCaption"),
       round: document.getElementById("round"),
       progress: document.getElementById("progress"),
       bar: document.getElementById("bar"),
@@ -1278,9 +1021,6 @@
       pause: document.getElementById("pause"),
       skip: document.getElementById("skip"),
       reset: document.getElementById("reset"),
-      restStat: document.getElementById("restStat"),
-      activeStat: document.getElementById("activeStat"),
-      activeStatLabel: document.getElementById("activeStatLabel"),
       activeMinutes: document.getElementById("activeMinutes"),
       restMinutes: document.getElementById("restMinutes"),
       rounds: document.getElementById("rounds"),
@@ -1309,7 +1049,7 @@
       { name: "Normal", minutes: 20 },
       { name: "Speed", minutes: 20 },
       { name: "Slow", minutes: 20 },
-      { name: "Fokus", minutes: 20 }
+      { name: "Edge", minutes: 20 }
     ];
 
     function readNumber(input, fallback) {
@@ -1506,21 +1246,13 @@
       const label = isRest ? (els.restLabel.value.trim() || "Pause") : activeModeName();
       els.phase.textContent = isRest ? `Pause - ${label}` : `Aktiv - ${label}`;
       els.phase.classList.toggle("rest", isRest);
-      els.timerCard.classList.toggle("rest", isRest);
       els.progress.classList.toggle("rest", isRest);
       els.clock.textContent = format(state.remaining);
-      els.dialCaption.textContent = (isRest ? (els.restLabel.value.trim() || "Pause") : (activeModeName() || "Arbeit")).toUpperCase();
-      els.round.textContent = `RUNDE ${state.currentRound} / ${maxRounds()}`;
+      els.round.textContent = `Block ${state.currentRound} von ${maxRounds()}`;
       els.rounds.value = maxRounds();
-      els.status.textContent = state.running ? "LÄUFT" : "BEREIT";
-      els.start.textContent = state.running ? "Ⅱ" : "▶";
-      els.start.setAttribute("aria-label", state.running ? "Timer pausieren" : "Timer starten");
-      els.restStat.textContent = format(restSeconds());
-      els.activeStat.textContent = format(currentActiveSeconds());
-      els.activeStatLabel.textContent = (activeModeName() || "Arbeit").toUpperCase();
+      els.status.textContent = state.running ? "LAEUFT" : "BEREIT";
       const done = state.phaseTotal > 0 ? 1 - (state.remaining / state.phaseTotal) : 0;
       const percent = Math.min(100, Math.max(0, done * 100));
-      els.timerCard.style.setProperty("--timer-progress", `${percent * 3.6}deg`);
       els.bar.style.width = `${percent}%`;
       els.progress.setAttribute("aria-valuenow", Math.round(percent).toString());
     }
@@ -1593,14 +1325,6 @@
       updateDisplay();
     }
 
-    function toggleStart() {
-      if (state.running) {
-        stop();
-      } else {
-        start();
-      }
-    }
-
     function reset() {
       stop();
       saveSettings();
@@ -1612,7 +1336,7 @@
       updateDisplay();
     }
 
-    els.start.addEventListener("click", toggleStart);
+    els.start.addEventListener("click", start);
     els.pause.addEventListener("click", stop);
     els.skip.addEventListener("click", nextPhase);
     els.reset.addEventListener("click", reset);
@@ -1796,7 +1520,7 @@
 
       const currentCode = Number(result.currentVersionCode || 0);
       const nextCode = Number(result.versionCode || 0);
-      const notes = result.notes ? `\n\nAenderungen:\n${result.notes}` : "";
+      const notes = result.notes ? `\n\nÄnderungen:\n${result.notes}` : "";
 
       if (!result.apkUrl) {
         setUpdateStatus("Update-Datei gefunden, aber apkUrl fehlt im Manifest.");
@@ -1826,7 +1550,7 @@
         renderModes([
           { name: "Normal", minutes: Number(active) || 20 },
           { name: "Speed", minutes: Number(active) || 20 },
-          { name: "Fokus", minutes: Number(active) || 20 }
+          { name: "Edge", minutes: Number(active) || 20 }
         ]);
         els.restMinutes.value = rest;
         reset();
