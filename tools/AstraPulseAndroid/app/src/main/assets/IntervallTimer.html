@@ -1,0 +1,1861 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#130711">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Astra Pulse">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="intervall-icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="intervall-icon.svg">
+  <title>Astra Pulse Timer</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #09050b;
+      --panel: rgba(26, 14, 28, 0.76);
+      --panel-strong: rgba(39, 19, 43, 0.9);
+      --line: #ff5bbd;
+      --line-soft: rgba(255, 91, 189, 0.32);
+      --text: #fff4fb;
+      --muted: #cdb3c6;
+      --active: #ff6bbd;
+      --rest: #35e6c4;
+      --danger: #ff596f;
+      --gold: #ffd166;
+      --shadow: rgba(255, 91, 189, 0.28);
+      --button: rgba(36, 21, 40, 0.84);
+      --timer-progress: 0deg;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      min-height: 100%;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: max(14px, env(safe-area-inset-top)) 14px max(18px, env(safe-area-inset-bottom));
+      background:
+        linear-gradient(135deg, rgba(255, 91, 189, 0.24), transparent 34%),
+        linear-gradient(225deg, rgba(53, 230, 196, 0.14), transparent 36%),
+        linear-gradient(180deg, #130711 0%, #09050b 56%, #040205 100%);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(180deg, rgba(0,0,0,0.55), transparent 78%);
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      width: 310px;
+      height: 310px;
+      right: -120px;
+      top: 80px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(255, 91, 189, 0.2), transparent 68%);
+      pointer-events: none;
+      filter: blur(4px);
+    }
+
+    .app {
+      width: min(560px, 100%);
+      display: grid;
+      gap: 16px;
+      align-content: start;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 4px 2px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .logo {
+      width: 42px;
+      height: 42px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      background: linear-gradient(145deg, #ff5bbd, #6b38ff 58%, #201023);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 12px 34px rgba(255, 91, 189, 0.28);
+      flex: 0 0 auto;
+    }
+
+    .logo span {
+      color: #fff;
+      font-weight: 900;
+      font-size: 1.25rem;
+      text-shadow: 0 0 18px rgba(255, 255, 255, 0.55);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.2rem;
+      letter-spacing: 0;
+      line-height: 1.1;
+    }
+
+    .subtitle {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .pill {
+      border: 1px solid rgba(53, 230, 196, 0.48);
+      border-radius: 999px;
+      color: #9af7e6;
+      padding: 8px 11px;
+      font-size: 0.74rem;
+      font-weight: 800;
+      background: rgba(53, 230, 196, 0.08);
+      white-space: nowrap;
+      box-shadow: inset 0 0 18px rgba(53, 230, 196, 0.08);
+    }
+
+    .card {
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+      background: var(--panel);
+      backdrop-filter: blur(18px);
+      box-shadow:
+        0 18px 50px rgba(0, 0, 0, 0.36),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+
+    .timer-card {
+      position: relative;
+      overflow: hidden;
+      padding: 20px 18px 18px;
+      display: grid;
+      gap: 18px;
+      background:
+        linear-gradient(145deg, rgba(255, 91, 189, 0.16), transparent 34%),
+        linear-gradient(315deg, rgba(53, 230, 196, 0.12), transparent 38%),
+        var(--panel-strong);
+    }
+
+    .timer-card::before {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 6px;
+      pointer-events: none;
+    }
+
+    .phase-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .phase {
+      font-size: 0.9rem;
+      font-weight: 900;
+      color: var(--active);
+      text-transform: uppercase;
+      letter-spacing: 0;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(255, 91, 189, 0.1);
+      border: 1px solid rgba(255, 91, 189, 0.22);
+    }
+
+    .phase.rest {
+      color: var(--rest);
+      background: rgba(53, 230, 196, 0.1);
+      border-color: rgba(53, 230, 196, 0.22);
+    }
+
+    .round {
+      color: var(--muted);
+      font-size: 0.85rem;
+      white-space: nowrap;
+    }
+
+    .dial {
+      width: min(78vw, 360px);
+      aspect-ratio: 1;
+      margin: 4px auto 2px;
+      border-radius: 50%;
+      position: relative;
+      display: grid;
+      place-items: center;
+      background:
+        conic-gradient(from -90deg, #ff6bbd var(--timer-progress), rgba(255, 255, 255, 0.08) 0),
+        radial-gradient(circle at 35% 26%, rgba(255, 255, 255, 0.18), transparent 26%),
+        linear-gradient(145deg, rgba(255, 91, 189, 0.18), rgba(53, 230, 196, 0.08));
+      box-shadow:
+        0 0 34px rgba(255, 91, 189, 0.2),
+        inset 0 0 30px rgba(255, 255, 255, 0.04);
+    }
+
+    .timer-card.rest .dial {
+      background:
+        conic-gradient(from -90deg, #35e6c4 var(--timer-progress), rgba(255, 255, 255, 0.08) 0),
+        radial-gradient(circle at 35% 26%, rgba(255, 255, 255, 0.18), transparent 26%),
+        linear-gradient(145deg, rgba(53, 230, 196, 0.18), rgba(139, 77, 255, 0.12));
+      box-shadow:
+        0 0 34px rgba(53, 230, 196, 0.2),
+        inset 0 0 30px rgba(255, 255, 255, 0.04);
+    }
+
+    .dial::before {
+      content: "";
+      position: absolute;
+      inset: 13px;
+      border-radius: inherit;
+      background:
+        radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.08), transparent 20%),
+        linear-gradient(180deg, rgba(16, 9, 21, 0.98), rgba(7, 3, 10, 0.98));
+      box-shadow:
+        inset 0 0 35px rgba(0, 0, 0, 0.72),
+        0 0 0 1px rgba(255, 255, 255, 0.06);
+    }
+
+    .dial::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: inset 0 0 0 10px rgba(0, 0, 0, 0.12);
+      pointer-events: none;
+    }
+
+    .dial-core {
+      position: relative;
+      z-index: 1;
+      width: calc(100% - 54px);
+      aspect-ratio: 1;
+      border-radius: inherit;
+      display: grid;
+      place-items: center;
+      align-content: center;
+      gap: 8px;
+      text-align: center;
+    }
+
+    .clock {
+      font-variant-numeric: tabular-nums;
+      text-align: center;
+      font-weight: 900;
+      line-height: 0.95;
+      font-size: clamp(3.9rem, 19vw, 7.2rem);
+      letter-spacing: 0;
+      background: linear-gradient(180deg, #ffffff 0%, #ffc8ec 42%, #ff6bbd 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 0 36px rgba(255, 91, 189, 0.16);
+    }
+
+    .dial-caption {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .progress {
+      height: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      background: rgba(4, 2, 5, 0.72);
+      overflow: hidden;
+      cursor: pointer;
+      touch-action: none;
+      box-shadow: inset 0 1px 8px rgba(0, 0, 0, 0.55);
+    }
+
+    .bar {
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #ff6bbd, #ffd166, #35e6c4);
+      box-shadow: 0 0 18px rgba(255, 91, 189, 0.42);
+      transition: width 0.25s linear;
+    }
+
+    .progress.rest .bar {
+      background: linear-gradient(90deg, #35e6c4, #8b4dff);
+      box-shadow: 0 0 18px rgba(53, 230, 196, 0.4);
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    button, input, textarea, select {
+      font: inherit;
+      border-radius: 8px;
+    }
+
+    button {
+      min-height: 50px;
+      border: 1px solid var(--line-soft);
+      background: var(--button);
+      color: var(--text);
+      font-weight: 900;
+      cursor: pointer;
+      touch-action: manipulation;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+    }
+
+    button:hover {
+      border-color: rgba(255, 255, 255, 0.28);
+      background: rgba(48, 27, 53, 0.95);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button.primary {
+      background: linear-gradient(135deg, #ff6bbd, #ffd166);
+      border-color: rgba(255, 255, 255, 0.22);
+      color: #230816;
+    }
+
+    button.warn {
+      background: rgba(53, 230, 196, 0.1);
+      border-color: rgba(53, 230, 196, 0.54);
+      color: #bafaf0;
+    }
+
+    button.danger {
+      background: rgba(255, 85, 112, 0.11);
+      border-color: rgba(255, 85, 112, 0.7);
+      color: #ffd5dc;
+    }
+
+    .settings {
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+      border-color: rgba(255, 126, 207, 0.24);
+      background:
+        linear-gradient(180deg, rgba(255, 126, 207, 0.07), rgba(255, 255, 255, 0.015)),
+        rgba(25, 13, 30, 0.78);
+    }
+
+    .setting-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid rgba(255, 126, 207, 0.3);
+      background: rgba(5, 2, 8, 0.74);
+      color: var(--text);
+      font-size: 1.1rem;
+      font-weight: 900;
+      box-shadow:
+        inset 0 1px 14px rgba(0, 0, 0, 0.42),
+        0 0 0 1px rgba(255, 255, 255, 0.015);
+    }
+
+    input {
+      min-height: 48px;
+      text-align: center;
+      padding: 0 13px;
+    }
+
+    textarea {
+      min-height: 96px;
+      padding: 13px;
+      resize: vertical;
+      font-size: 0.95rem;
+      line-height: 1.4;
+      font-weight: 700;
+    }
+
+    select {
+      min-height: 48px;
+      padding: 0 12px;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: rgba(255, 126, 207, 0.85);
+      box-shadow:
+        0 0 0 3px rgba(255, 126, 207, 0.12),
+        0 0 24px rgba(255, 91, 189, 0.18),
+        inset 0 1px 12px rgba(0, 0, 0, 0.34);
+    }
+
+    input[type="text"] {
+      text-align: left;
+      font-size: 0.98rem;
+    }
+
+    .quick {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .mode-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .mode-row {
+      display: grid;
+      grid-template-columns: 1fr 86px 44px;
+      gap: 8px;
+      padding: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.025);
+    }
+
+    .mode-row input {
+      min-height: 42px;
+      font-size: 0.92rem;
+    }
+
+    .mode-row input[type="number"] {
+      text-align: center;
+    }
+
+    .small-danger {
+      min-height: 42px;
+      padding: 0;
+      color: #ffd5dc;
+      border-color: rgba(255, 85, 112, 0.7);
+      background: rgba(255, 85, 112, 0.12);
+    }
+
+    .mode-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .mode-actions button {
+      min-height: 42px;
+      font-size: 0.78rem;
+    }
+
+    .quick button {
+      min-height: 42px;
+      font-size: 0.78rem;
+    }
+
+    .archive {
+      position: relative;
+      overflow: hidden;
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+      border-color: rgba(255, 126, 207, 0.28);
+      background:
+        radial-gradient(circle at 14% 0%, rgba(255, 91, 189, 0.18), transparent 34%),
+        linear-gradient(180deg, rgba(255, 126, 207, 0.06), rgba(255, 255, 255, 0.012)),
+        rgba(22, 10, 27, 0.82);
+    }
+
+    .archive-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      padding-bottom: 2px;
+    }
+
+    .archive-head h2 {
+      margin: 0;
+      font-size: 1rem;
+      letter-spacing: 0;
+    }
+
+    .version {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+
+    .archive-actions {
+      display: grid;
+      grid-template-columns: 1.45fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    .update-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .archive-actions button,
+    .update-actions button {
+      min-height: 50px;
+      padding: 0 10px;
+      font-size: 0.82rem;
+      line-height: 1.15;
+      white-space: nowrap;
+    }
+
+    .update-actions button[disabled] {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .update-status {
+      white-space: pre-line;
+      border-radius: 18px;
+      background:
+        linear-gradient(135deg, rgba(255, 209, 102, 0.08), rgba(255, 126, 207, 0.04)),
+        rgba(7, 4, 10, 0.52);
+    }
+
+    .notice {
+      padding: 13px 15px;
+      color: var(--muted);
+      font-size: 0.86rem;
+      line-height: 1.45;
+      border-color: rgba(255, 209, 102, 0.22);
+    }
+
+    .install {
+      display: none;
+      border-color: rgba(53, 230, 196, 0.55);
+      background: rgba(53, 230, 196, 0.08);
+      padding: 12px;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .install.show {
+      display: flex;
+    }
+
+    .install p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.35;
+    }
+
+    .install button {
+      min-height: 40px;
+      padding: 0 12px;
+      flex: 0 0 auto;
+    }
+
+    /* Poster-style Astra Pulse screen */
+    .app {
+      width: min(430px, 100%);
+      gap: 14px;
+    }
+
+    .topbar {
+      display: none;
+    }
+
+    .timer-card {
+      min-height: 640px;
+      padding: 24px 18px 18px;
+      border-radius: 34px;
+      gap: 22px;
+      background:
+        radial-gradient(circle at 50% 34%, rgba(255, 91, 189, 0.2), transparent 32%),
+        radial-gradient(circle at 76% 34%, rgba(98, 223, 255, 0.16), transparent 28%),
+        linear-gradient(180deg, rgba(20, 13, 31, 0.98), rgba(9, 5, 14, 0.98));
+      border-color: rgba(255, 126, 207, 0.5);
+      box-shadow:
+        0 28px 70px rgba(0, 0, 0, 0.42),
+        0 0 42px rgba(255, 91, 189, 0.15),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+    }
+
+    .timer-card::before {
+      inset: 14px;
+      border-radius: 28px;
+      opacity: 0.72;
+    }
+
+    .phone-nav {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 44px 1fr 44px;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-icon {
+      width: 44px;
+      height: 44px;
+      min-height: 44px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba(255, 255, 255, 0.1);
+      box-shadow: none;
+      color: rgba(255, 244, 251, 0.9);
+      font-size: 1.25rem;
+    }
+
+    .phone-title {
+      display: grid;
+      justify-items: center;
+      gap: 6px;
+      color: #fff9fd;
+      font-weight: 900;
+      font-size: 1.05rem;
+      text-transform: uppercase;
+    }
+
+    .pulse-mark {
+      color: #ff6bbd;
+      font-size: 1.15rem;
+      line-height: 1;
+      text-shadow: 0 0 14px rgba(255, 91, 189, 0.85);
+    }
+
+    .phase-row {
+      display: none;
+    }
+
+    .dial {
+      width: min(78vw, 315px);
+      margin: 18px auto 10px;
+      background:
+        conic-gradient(from -35deg, #ff62c8 var(--timer-progress), #68e8ff var(--timer-progress), rgba(255, 255, 255, 0.08) 0),
+        radial-gradient(circle at 35% 26%, rgba(255, 255, 255, 0.2), transparent 22%),
+        linear-gradient(145deg, rgba(255, 91, 189, 0.22), rgba(104, 232, 255, 0.12));
+      box-shadow:
+        0 0 44px rgba(255, 91, 189, 0.22),
+        0 0 54px rgba(104, 232, 255, 0.1),
+        inset 0 0 30px rgba(255, 255, 255, 0.05);
+    }
+
+    .timer-card.rest .dial {
+      background:
+        conic-gradient(from -35deg, #35e6c4 var(--timer-progress), #8b4dff var(--timer-progress), rgba(255, 255, 255, 0.08) 0),
+        radial-gradient(circle at 35% 26%, rgba(255, 255, 255, 0.2), transparent 22%),
+        linear-gradient(145deg, rgba(53, 230, 196, 0.2), rgba(139, 77, 255, 0.14));
+    }
+
+    .dial::after {
+      width: 28px;
+      height: 28px;
+      inset: auto 42px 64px auto;
+      border: 0;
+      background: radial-gradient(circle, #ffc5ef 0%, #ff6bbd 56%, #7ee8ff 100%);
+      box-shadow:
+        0 0 18px rgba(255, 91, 189, 0.9),
+        0 0 28px rgba(104, 232, 255, 0.42);
+    }
+
+    .dial-core {
+      gap: 10px;
+    }
+
+    .clock {
+      color: #fff8fd;
+      background: none;
+      text-shadow: 0 0 34px rgba(255, 255, 255, 0.1);
+      font-size: clamp(4.1rem, 18vw, 6.4rem);
+    }
+
+    .dial-caption {
+      color: #ff9bd8;
+      font-size: 0.9rem;
+      font-weight: 900;
+    }
+
+    .dial .round {
+      margin-top: 4px;
+      padding: 7px 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(255, 255, 255, 0.05);
+      color: #ead8e9;
+      font-size: 0.78rem;
+      font-weight: 900;
+    }
+
+    .timer-stats {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1fr 92px 1fr;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 10px 18px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+    }
+
+    .timer-stat {
+      display: grid;
+      gap: 4px;
+      text-align: center;
+      font-weight: 900;
+    }
+
+    .timer-stat strong {
+      color: #7ee8ff;
+      font-size: 1.35rem;
+      line-height: 1;
+    }
+
+    .timer-stat:last-child strong {
+      color: #ff8ed1;
+    }
+
+    .timer-stat span {
+      color: var(--muted);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+    }
+
+    .play-button {
+      width: 88px;
+      height: 88px;
+      min-height: 88px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      padding: 0 0 0 5px;
+      color: #ffc5ec;
+      font-size: 2.1rem;
+      background:
+        radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.12), transparent 32%),
+        linear-gradient(145deg, rgba(255, 91, 189, 0.42), rgba(139, 77, 255, 0.24));
+      border: 2px solid rgba(255, 126, 207, 0.82);
+      box-shadow:
+        0 0 26px rgba(255, 91, 189, 0.38),
+        inset 0 0 22px rgba(0, 0, 0, 0.48);
+    }
+
+    .icon-strip {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      padding: 10px;
+      border: 1px solid rgba(255, 126, 207, 0.22);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.035);
+    }
+
+    .icon-strip button {
+      min-height: 44px;
+      border-radius: 12px;
+      box-shadow: none;
+      background: transparent;
+      color: #d9b6d8;
+      font-size: 1.45rem;
+      padding: 0;
+    }
+
+    .progress {
+      height: 7px;
+      opacity: 0.68;
+      margin-top: -2px;
+    }
+
+    .notice,
+    .settings,
+    .archive {
+      border-radius: 24px;
+    }
+
+    @media (max-width: 430px) {
+      body { padding-left: 10px; padding-right: 10px; }
+      .timer-card { min-height: 615px; padding: 20px 14px 16px; }
+      .dial { width: min(82vw, 310px); }
+      .timer-stats { grid-template-columns: 1fr 82px 1fr; gap: 8px; }
+      .play-button { width: 80px; height: 80px; min-height: 80px; }
+      .setting-grid { grid-template-columns: 1fr; }
+      .status-grid { grid-template-columns: 1fr; }
+      .quick { grid-template-columns: 1fr; }
+      .mode-actions { grid-template-columns: 1fr; }
+      .archive-actions { grid-template-columns: 1fr; }
+      .controls { grid-template-columns: 1fr; }
+      .clock { font-size: clamp(3.5rem, 21vw, 6.4rem); }
+      .install { align-items: stretch; flex-direction: column; }
+    }
+
+    /* Finaler Poster-Look: naeher am Referenzbild mit Neon-Phone-Screen. */
+    body {
+      background:
+        radial-gradient(circle at 50% 14%, rgba(255, 89, 186, 0.22), transparent 26%),
+        radial-gradient(circle at 18% 45%, rgba(255, 89, 186, 0.18), transparent 32%),
+        radial-gradient(circle at 82% 42%, rgba(112, 126, 255, 0.16), transparent 30%),
+        linear-gradient(135deg, #120515 0%, #20091e 38%, #090712 72%, #05050b 100%);
+    }
+
+    .app {
+      width: min(440px, 100%);
+      gap: 16px;
+    }
+
+    .timer-card {
+      min-height: 690px;
+      padding: 25px 18px 18px;
+      border-radius: 42px;
+      gap: 20px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 42%, rgba(255, 91, 189, 0.2), transparent 38%),
+        radial-gradient(circle at 84% 41%, rgba(93, 218, 255, 0.16), transparent 26%),
+        linear-gradient(180deg, rgba(18, 13, 30, 0.99) 0%, rgba(11, 7, 17, 0.99) 62%, rgba(7, 4, 12, 0.99) 100%);
+      border: 2px solid rgba(255, 153, 219, 0.42);
+      box-shadow:
+        0 30px 80px rgba(0, 0, 0, 0.62),
+        0 0 54px rgba(255, 91, 189, 0.22),
+        inset 0 0 0 10px rgba(255, 255, 255, 0.018),
+        inset 0 0 46px rgba(255, 91, 189, 0.08);
+    }
+
+    .timer-card::before {
+      content: "";
+      position: absolute;
+      inset: 14px;
+      border-radius: 34px;
+      border: 1px solid rgba(255, 174, 229, 0.18);
+      background:
+        radial-gradient(circle at 50% 97%, rgba(255, 91, 189, 0.16), transparent 23%),
+        linear-gradient(90deg, rgba(255, 91, 189, 0.13), transparent 25%, transparent 75%, rgba(104, 232, 255, 0.12));
+      opacity: 1;
+      pointer-events: none;
+    }
+
+    .timer-card::after {
+      content: "";
+      position: absolute;
+      left: 12%;
+      right: 12%;
+      bottom: 124px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 91, 189, 0.45), rgba(104, 232, 255, 0.32), transparent);
+      pointer-events: none;
+    }
+
+    .phone-nav {
+      grid-template-columns: 48px 1fr 48px;
+      margin-bottom: 2px;
+      padding: 0 4px;
+    }
+
+    .nav-icon {
+      width: 48px;
+      height: 48px;
+      min-height: 48px;
+      border: 0;
+      background: transparent;
+      color: rgba(255, 255, 255, 0.88);
+      font-size: 1.42rem;
+    }
+
+    .phone-title {
+      gap: 8px;
+      color: #ffffff;
+      font-size: 1.08rem;
+      text-shadow: 0 0 18px rgba(255, 255, 255, 0.18);
+    }
+
+    .pulse-mark {
+      color: #ff66c8;
+      font-size: 1.22rem;
+      text-shadow: 0 0 18px rgba(255, 91, 189, 0.9);
+    }
+
+    .dial {
+      width: min(82vw, 328px);
+      aspect-ratio: 1;
+      margin: 14px auto 4px;
+      border-radius: 50%;
+      padding: 13px;
+      background:
+        conic-gradient(from -42deg, rgba(255, 255, 255, 0.28) 0deg, transparent 48deg, transparent 360deg),
+        conic-gradient(from -38deg, #ff54bf 0deg, #ff63c7 92deg, #945bff 188deg, #70ecff 295deg, #ff54bf 360deg);
+      box-shadow:
+        0 0 22px rgba(255, 91, 189, 0.5),
+        0 0 48px rgba(139, 77, 255, 0.28),
+        0 0 74px rgba(104, 232, 255, 0.16),
+        inset 0 0 18px rgba(255, 255, 255, 0.07);
+    }
+
+    .timer-card.rest .dial {
+      background:
+        conic-gradient(from -42deg, rgba(255, 255, 255, 0.26) 0deg, transparent 48deg, transparent 360deg),
+        conic-gradient(from -38deg, #34e7c5 0deg, #7ee8ff 112deg, #8a5dff 220deg, #ff71c8 360deg);
+    }
+
+    .dial::before {
+      content: "";
+      position: absolute;
+      inset: 13px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 50% 42%, rgba(255, 91, 189, 0.13), transparent 45%),
+        linear-gradient(180deg, rgba(15, 10, 25, 0.98), rgba(5, 4, 10, 0.99));
+      box-shadow:
+        inset 0 0 38px rgba(0, 0, 0, 0.74),
+        inset 0 0 16px rgba(255, 255, 255, 0.04);
+      transform: none;
+    }
+
+    .dial::after {
+      content: "";
+      position: absolute;
+      top: 36px;
+      right: 54px;
+      width: 25px;
+      height: 25px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #ffd2f0 0%, #ff6fc8 55%, #7de9ff 100%);
+      box-shadow:
+        0 0 16px rgba(255, 91, 189, 0.95),
+        0 0 28px rgba(104, 232, 255, 0.45);
+    }
+
+    .dial-core {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+      display: grid;
+      place-items: center;
+      align-content: center;
+      gap: 9px;
+      border-radius: 50%;
+      background: transparent;
+    }
+
+    .clock {
+      font-size: clamp(4.55rem, 19vw, 6.75rem);
+      color: #fff;
+      line-height: 0.96;
+      text-shadow:
+        0 0 20px rgba(255, 255, 255, 0.18),
+        0 0 38px rgba(255, 91, 189, 0.14);
+    }
+
+    .dial-caption {
+      color: #ff8fd3;
+      font-size: 1rem;
+      font-weight: 900;
+    }
+
+    .dial .round {
+      margin-top: 6px;
+      padding: 8px 20px;
+      border-radius: 999px;
+      border-color: rgba(255, 164, 224, 0.28);
+      background: rgba(255, 255, 255, 0.035);
+      color: #f7d8ef;
+      box-shadow: inset 0 0 14px rgba(255, 91, 189, 0.08);
+    }
+
+    .timer-stats {
+      grid-template-columns: 1fr 90px 1fr;
+      gap: 10px;
+      margin: 0 -4px;
+      padding: 17px 9px 18px;
+      border-top: 1px solid rgba(255, 255, 255, 0.09);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background:
+        linear-gradient(90deg, rgba(104, 232, 255, 0.08), rgba(255, 91, 189, 0.09), rgba(255, 199, 113, 0.05));
+    }
+
+    .timer-stat strong {
+      font-size: 1.42rem;
+      color: #73eaff;
+      text-shadow: 0 0 14px rgba(104, 232, 255, 0.34);
+    }
+
+    .timer-stat:last-child strong {
+      color: #ff86d1;
+      text-shadow: 0 0 14px rgba(255, 91, 189, 0.34);
+    }
+
+    .timer-stat span {
+      color: rgba(255, 225, 246, 0.72);
+      font-size: 0.74rem;
+      font-weight: 900;
+    }
+
+    .play-button {
+      width: 88px;
+      height: 88px;
+      min-height: 88px;
+      border-radius: 50%;
+      padding-left: 6px;
+      color: #ffe1f7;
+      font-size: 2.25rem;
+      background:
+        radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.2), transparent 28%),
+        linear-gradient(145deg, rgba(255, 91, 189, 0.54), rgba(137, 77, 255, 0.36) 68%, rgba(104, 232, 255, 0.18));
+      border: 2px solid rgba(255, 129, 211, 0.86);
+      box-shadow:
+        0 0 24px rgba(255, 91, 189, 0.58),
+        0 0 38px rgba(139, 77, 255, 0.28),
+        inset 0 0 22px rgba(0, 0, 0, 0.42);
+    }
+
+    .icon-strip {
+      margin: 2px 8px 0;
+      padding: 11px;
+      border-radius: 19px;
+      border-color: rgba(255, 157, 221, 0.24);
+      background: rgba(255, 255, 255, 0.035);
+      box-shadow: inset 0 0 18px rgba(255, 91, 189, 0.045);
+    }
+
+    .icon-strip button {
+      color: #d9bedf;
+      font-size: 1.5rem;
+    }
+
+    .progress {
+      margin: 6px 18px 0;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      opacity: 1;
+    }
+
+    .progress .bar {
+      background: linear-gradient(90deg, #ff62c8, #a35dff, #72e8ff);
+      box-shadow: 0 0 18px rgba(255, 91, 189, 0.38);
+    }
+
+    @media (max-width: 430px) {
+      .timer-card {
+        min-height: 668px;
+        padding: 22px 14px 16px;
+        border-radius: 36px;
+      }
+
+      .timer-card::before {
+        inset: 11px;
+        border-radius: 29px;
+      }
+
+      .dial {
+        width: min(84vw, 318px);
+      }
+
+      .clock {
+        font-size: clamp(4.2rem, 20vw, 6.25rem);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"><span>A</span></div>
+        <div>
+          <h1>Astra Pulse</h1>
+          <div class="subtitle">Version 1.3 &middot; Lokal. Werbefrei. Offline bereit.</div>
+        </div>
+      </div>
+      <div class="pill" id="status">BEREIT</div>
+    </header>
+
+    <section class="install card" id="installBox">
+      <p>Du kannst den Timer als App auf den Startbildschirm legen.</p>
+      <button id="installButton">INSTALLIEREN</button>
+    </section>
+
+    <section class="notice card">
+      Kurzregel: Wenn etwas taub, kalt, schmerzhaft, blau/lila oder unangenehm wird, sofort stoppen.
+      Pausen sind Teil des Timers, nicht optionaler Luxus.
+    </section>
+
+    <section class="timer-card card" id="timerCard" aria-live="polite">
+      <div class="phone-nav">
+        <button class="nav-icon" type="button" aria-label="Menü">☰</button>
+        <div class="phone-title">
+          <span>INTERVALL</span>
+          <span class="pulse-mark">⌁</span>
+        </div>
+        <button class="nav-icon" type="button" aria-label="Einstellungen">⚙</button>
+      </div>
+      <div class="phase-row">
+        <div class="phase" id="phase">Aktiv</div>
+      </div>
+      <div class="dial">
+        <div class="dial-core">
+          <div class="clock" id="clock">20:00</div>
+          <div class="dial-caption" id="dialCaption">ARBEIT</div>
+          <div class="round" id="round">RUNDE 1 / 3</div>
+        </div>
+      </div>
+      <div class="timer-stats">
+        <div class="timer-stat">
+          <strong id="restStat">10:00</strong>
+          <span>Pause</span>
+        </div>
+        <button class="play-button" id="start" type="button" aria-label="Timer starten">▶</button>
+        <div class="timer-stat">
+          <strong id="activeStat">20:00</strong>
+          <span id="activeStatLabel">Arbeit</span>
+        </div>
+      </div>
+      <div class="icon-strip" aria-label="Timer-Steuerung">
+        <button id="reset" type="button" aria-label="Zurücksetzen">↻</button>
+        <button id="skip" type="button" aria-label="Weiter">≫</button>
+        <button id="pause" type="button" aria-label="Pause">Ⅱ</button>
+      </div>
+      <div class="progress" id="progress" role="slider" aria-label="Fortschritt der aktuellen Phase" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0"><div class="bar" id="bar"></div></div>
+    </section>
+
+    <section class="settings card">
+      <div class="setting-grid">
+        <label>Standard Aktiv
+          <input id="activeMinutes" type="number" inputmode="numeric" min="1" max="60" value="20">
+        </label>
+        <label>Pause
+          <input id="restMinutes" type="number" inputmode="numeric" min="1" max="60" value="10">
+        </label>
+        <label>Runden
+          <input id="rounds" type="number" inputmode="numeric" min="1" max="12" value="4" disabled>
+        </label>
+      </div>
+      <div class="status-grid">
+        <label>Pause-Status
+          <input id="restLabel" type="text" maxlength="28" value="Pause" list="statusSuggestions">
+        </label>
+        <label>Ablauf
+          <input id="modeHint" type="text" value="Status + Minuten" disabled>
+        </label>
+      </div>
+      <div class="mode-list" id="modeList"></div>
+      <div class="mode-actions">
+        <button id="addMode" type="button">STATUS HINZUFÜGEN</button>
+        <button id="resetModes" type="button">STANDARD STATUS</button>
+      </div>
+      <datalist id="statusSuggestions">
+        <option value="Normal"></option>
+        <option value="Speed"></option>
+        <option value="Slow"></option>
+        <option value="Pause"></option>
+        <option value="Check"></option>
+        <option value="Recovery"></option>
+      </datalist>
+      <div class="quick">
+        <button data-preset="20,10,3">20 / 10</button>
+        <button data-preset="15,5,3">15 / 5</button>
+        <button data-preset="10,5,4">10 / 5</button>
+      </div>
+    </section>
+
+    <section class="archive card">
+      <div class="archive-head">
+        <h2>Bereiche / Archiv</h2>
+        <div class="version">Eigene Abläufe</div>
+      </div>
+      <label>Gespeicherte Bereiche
+        <select id="areaSelect">
+          <option value="">Noch kein Bereich gespeichert</option>
+        </select>
+      </label>
+      <label>Bereichsname
+        <input id="areaName" type="text" maxlength="32" placeholder="z.B. Alltag, Training, Eigener Ablauf">
+      </label>
+      <label>Beschreibung
+        <textarea id="areaDescription" maxlength="500" placeholder="Beschreibe hier selbst, wofür dieser Bereich gedacht ist."></textarea>
+      </label>
+      <div class="archive-actions">
+        <button id="saveArea" type="button" class="primary">BEREICH SPEICHERN</button>
+        <button id="loadArea" type="button">LADEN</button>
+        <button id="deleteArea" type="button" class="danger">LÖSCHEN</button>
+      </div>
+    </section>
+
+    <section class="archive card">
+      <div class="archive-head">
+        <h2>Updates</h2>
+        <div class="version" id="appVersion">Version wird geladen</div>
+      </div>
+      <label>Update-Quelle
+        <input id="updateManifestUrl" type="text" placeholder="https://.../astra-pulse-update.json">
+      </label>
+      <div class="update-actions">
+        <button id="saveUpdateUrl" type="button">URL SPEICHERN</button>
+        <button id="checkUpdate" type="button" class="primary">UPDATE PRÜFEN</button>
+        <button id="installUpdate" type="button" disabled>UPDATE INSTALLIEREN</button>
+        <button id="clearUpdate" type="button" class="danger">URL LEEREN</button>
+      </div>
+      <div class="notice card update-status" id="updateStatus">Noch keine Update-Quelle gespeichert.</div>
+    </section>
+  </main>
+
+  <script>
+    const storageKey = "astra-interval-timer-settings";
+    const archiveKey = "astra-pulse-areas-v1";
+    const updateUrlKey = "astra-pulse-update-manifest-url";
+    const state = {
+      running: false,
+      phase: "active",
+      currentRound: 1,
+      remaining: 20 * 60,
+      phaseTotal: 20 * 60,
+      timerId: null,
+      lastTick: null,
+      installPrompt: null,
+      pendingUpdateApk: ""
+    };
+
+    const els = {
+      status: document.getElementById("status"),
+      timerCard: document.getElementById("timerCard"),
+      phase: document.getElementById("phase"),
+      clock: document.getElementById("clock"),
+      dialCaption: document.getElementById("dialCaption"),
+      round: document.getElementById("round"),
+      progress: document.getElementById("progress"),
+      bar: document.getElementById("bar"),
+      start: document.getElementById("start"),
+      pause: document.getElementById("pause"),
+      skip: document.getElementById("skip"),
+      reset: document.getElementById("reset"),
+      restStat: document.getElementById("restStat"),
+      activeStat: document.getElementById("activeStat"),
+      activeStatLabel: document.getElementById("activeStatLabel"),
+      activeMinutes: document.getElementById("activeMinutes"),
+      restMinutes: document.getElementById("restMinutes"),
+      rounds: document.getElementById("rounds"),
+      restLabel: document.getElementById("restLabel"),
+      modeList: document.getElementById("modeList"),
+      addMode: document.getElementById("addMode"),
+      resetModes: document.getElementById("resetModes"),
+      areaSelect: document.getElementById("areaSelect"),
+      areaName: document.getElementById("areaName"),
+      areaDescription: document.getElementById("areaDescription"),
+      saveArea: document.getElementById("saveArea"),
+      loadArea: document.getElementById("loadArea"),
+      deleteArea: document.getElementById("deleteArea"),
+      appVersion: document.getElementById("appVersion"),
+      updateManifestUrl: document.getElementById("updateManifestUrl"),
+      saveUpdateUrl: document.getElementById("saveUpdateUrl"),
+      checkUpdate: document.getElementById("checkUpdate"),
+      installUpdate: document.getElementById("installUpdate"),
+      clearUpdate: document.getElementById("clearUpdate"),
+      updateStatus: document.getElementById("updateStatus"),
+      installBox: document.getElementById("installBox"),
+      installButton: document.getElementById("installButton")
+    };
+
+    const defaultModes = [
+      { name: "Normal", minutes: 20 },
+      { name: "Speed", minutes: 20 },
+      { name: "Slow", minutes: 20 },
+      { name: "Fokus", minutes: 20 }
+    ];
+
+    function readNumber(input, fallback) {
+      const value = Number.parseInt(input.value, 10);
+      return Number.isFinite(value) ? Math.max(Number(input.min || 1), Math.min(Number(input.max || 999), value)) : fallback;
+    }
+
+    function restSeconds() { return readNumber(els.restMinutes, 10) * 60; }
+    function maxRounds() { return readModes().length; }
+
+    function readModes() {
+      const rows = [...els.modeList.querySelectorAll(".mode-row")];
+      const modes = rows.map((row) => {
+        const name = row.querySelector("[data-mode-name]").value.trim();
+        const minutes = Number.parseInt(row.querySelector("[data-mode-minutes]").value, 10);
+        return {
+          name: name || "Status",
+          minutes: Number.isFinite(minutes) ? Math.max(1, Math.min(60, minutes)) : 1
+        };
+      });
+      return modes.length ? modes : defaultModes;
+    }
+
+    function currentMode() {
+      const modes = readModes();
+      return modes[Math.max(0, Math.min(state.currentRound - 1, modes.length - 1))] || defaultModes[0];
+    }
+
+    function activeModeName() {
+      if (state.phase !== "active") return "";
+      return currentMode().name || "Normal";
+    }
+
+    function currentActiveSeconds() {
+      return Math.max(1, currentMode().minutes || 1) * 60;
+    }
+
+    function renderModes(modes = defaultModes) {
+      els.modeList.innerHTML = "";
+      modes.forEach((mode) => addModeRow(mode.name, mode.minutes));
+      els.rounds.value = readModes().length;
+    }
+
+    function addModeRow(name = "Normal", minutes = 5) {
+      const row = document.createElement("div");
+      row.className = "mode-row";
+      row.innerHTML = `
+        <input data-mode-name type="text" maxlength="24" list="statusSuggestions" value="${escapeHtml(name)}" aria-label="Statusname">
+        <input data-mode-minutes type="number" inputmode="numeric" min="1" max="60" value="${Number(minutes) || 5}" aria-label="Status Minuten">
+        <button class="small-danger" type="button" aria-label="Status entfernen">X</button>
+      `;
+      row.querySelectorAll("input").forEach((input) => {
+        input.addEventListener("change", reset);
+      });
+      row.querySelector("button").addEventListener("click", () => {
+        if (els.modeList.querySelectorAll(".mode-row").length <= 1) {
+          renderModes([{ name: "Normal", minutes: 20 }]);
+        } else {
+          row.remove();
+        }
+        reset();
+      });
+      els.modeList.appendChild(row);
+      els.rounds.value = readModes().length;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    function saveSettings() {
+      const settings = {
+        active: readNumber(els.activeMinutes, 20),
+        rest: readNumber(els.restMinutes, 10),
+        restLabel: els.restLabel.value.trim() || "Pause",
+        modes: readModes()
+      };
+      localStorage.setItem(storageKey, JSON.stringify(settings));
+    }
+
+    function readAreas() {
+      try {
+        const areas = JSON.parse(localStorage.getItem(archiveKey) || "[]");
+        return Array.isArray(areas) ? areas : [];
+      } catch {
+        localStorage.removeItem(archiveKey);
+        return [];
+      }
+    }
+
+    function writeAreas(areas) {
+      localStorage.setItem(archiveKey, JSON.stringify(areas));
+      renderAreas();
+    }
+
+    function currentConfig() {
+      return {
+        rest: readNumber(els.restMinutes, 10),
+        restLabel: els.restLabel.value.trim() || "Pause",
+        modes: readModes()
+      };
+    }
+
+    function applyConfig(config) {
+      if (!config) return;
+      if (config.rest) els.restMinutes.value = config.rest;
+      if (config.restLabel) els.restLabel.value = config.restLabel;
+      renderModes(Array.isArray(config.modes) && config.modes.length ? config.modes : defaultModes);
+      reset();
+    }
+
+    function renderAreas(selectedId = "") {
+      const areas = readAreas();
+      els.areaSelect.innerHTML = "";
+      if (!areas.length) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "Noch kein Bereich gespeichert";
+        els.areaSelect.appendChild(option);
+        return;
+      }
+
+      areas.forEach((area) => {
+        const option = document.createElement("option");
+        option.value = area.id;
+        option.textContent = area.name;
+        els.areaSelect.appendChild(option);
+      });
+
+      if (selectedId) {
+        els.areaSelect.value = selectedId;
+      }
+    }
+
+    function selectedArea() {
+      return readAreas().find((area) => area.id === els.areaSelect.value);
+    }
+
+    function fillAreaForm(area) {
+      els.areaName.value = area?.name || "";
+      els.areaDescription.value = area?.description || "";
+    }
+
+    function loadSettings() {
+      try {
+        const settings = JSON.parse(localStorage.getItem(storageKey) || "{}");
+        if (settings.active) els.activeMinutes.value = settings.active;
+        if (settings.rest) els.restMinutes.value = settings.rest;
+        if (settings.restLabel) els.restLabel.value = settings.restLabel;
+        renderModes(Array.isArray(settings.modes) && settings.modes.length ? settings.modes : defaultModes);
+      } catch {
+        localStorage.removeItem(storageKey);
+        renderModes(defaultModes);
+      }
+    }
+
+    function format(seconds) {
+      const safeSeconds = Math.max(0, Math.ceil(seconds));
+      const mins = Math.floor(safeSeconds / 60).toString().padStart(2, "0");
+      const secs = (safeSeconds % 60).toString().padStart(2, "0");
+      return `${mins}:${secs}`;
+    }
+
+    function beep() {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const context = new AudioContext();
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        oscillator.type = "sine";
+        oscillator.frequency.value = state.phase === "rest" ? 660 : 920;
+        oscillator.connect(gain);
+        gain.connect(context.destination);
+        gain.gain.setValueAtTime(0.0001, context.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.22, context.currentTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.32);
+        oscillator.start();
+        oscillator.stop(context.currentTime + 0.34);
+      } catch {
+        // Browser may block audio until user interaction. The timer itself still works.
+      }
+
+      if ("vibrate" in navigator) {
+        navigator.vibrate([180, 80, 180]);
+      }
+    }
+
+    function updateDisplay() {
+      const isRest = state.phase === "rest";
+      const label = isRest ? (els.restLabel.value.trim() || "Pause") : activeModeName();
+      els.phase.textContent = isRest ? `Pause - ${label}` : `Aktiv - ${label}`;
+      els.phase.classList.toggle("rest", isRest);
+      els.timerCard.classList.toggle("rest", isRest);
+      els.progress.classList.toggle("rest", isRest);
+      els.clock.textContent = format(state.remaining);
+      els.dialCaption.textContent = (isRest ? (els.restLabel.value.trim() || "Pause") : (activeModeName() || "Arbeit")).toUpperCase();
+      els.round.textContent = `RUNDE ${state.currentRound} / ${maxRounds()}`;
+      els.rounds.value = maxRounds();
+      els.status.textContent = state.running ? "LÄUFT" : "BEREIT";
+      els.start.textContent = state.running ? "Ⅱ" : "▶";
+      els.start.setAttribute("aria-label", state.running ? "Timer pausieren" : "Timer starten");
+      els.restStat.textContent = format(restSeconds());
+      els.activeStat.textContent = format(currentActiveSeconds());
+      els.activeStatLabel.textContent = (activeModeName() || "Arbeit").toUpperCase();
+      const done = state.phaseTotal > 0 ? 1 - (state.remaining / state.phaseTotal) : 0;
+      const percent = Math.min(100, Math.max(0, done * 100));
+      els.timerCard.style.setProperty("--timer-progress", `${percent * 3.6}deg`);
+      els.bar.style.width = `${percent}%`;
+      els.progress.setAttribute("aria-valuenow", Math.round(percent).toString());
+    }
+
+    function setPhase(phase) {
+      state.phase = phase;
+      state.phaseTotal = phase === "active" ? currentActiveSeconds() : restSeconds();
+      state.remaining = state.phaseTotal;
+      if (phase === "active") {
+        els.activeMinutes.value = Math.max(1, Math.round(state.phaseTotal / 60));
+      }
+      beep();
+      updateDisplay();
+    }
+
+    function finish() {
+      stop();
+      state.remaining = 0;
+      els.status.textContent = "FERTIG";
+      beep();
+      updateDisplay();
+    }
+
+    function nextPhase() {
+      if (state.phase === "active") {
+        setPhase("rest");
+        return;
+      }
+
+      if (state.currentRound >= maxRounds()) {
+        finish();
+        return;
+      }
+
+      state.currentRound += 1;
+      setPhase("active");
+    }
+
+    function tick() {
+      const now = Date.now();
+      const elapsed = state.lastTick ? (now - state.lastTick) / 1000 : 0;
+      state.lastTick = now;
+      state.remaining -= elapsed;
+
+      if (state.remaining <= 0) {
+        nextPhase();
+        state.lastTick = Date.now();
+      }
+
+      updateDisplay();
+    }
+
+    function start() {
+      if (state.running) return;
+      saveSettings();
+      state.running = true;
+      state.lastTick = Date.now();
+      state.timerId = window.setInterval(tick, 250);
+      beep();
+      updateDisplay();
+    }
+
+    function stop() {
+      state.running = false;
+      state.lastTick = null;
+      if (state.timerId) {
+        window.clearInterval(state.timerId);
+        state.timerId = null;
+      }
+      updateDisplay();
+    }
+
+    function toggleStart() {
+      if (state.running) {
+        stop();
+      } else {
+        start();
+      }
+    }
+
+    function reset() {
+      stop();
+      saveSettings();
+      state.phase = "active";
+      state.currentRound = 1;
+      state.phaseTotal = currentActiveSeconds();
+      state.remaining = state.phaseTotal;
+      els.activeMinutes.value = Math.max(1, Math.round(state.phaseTotal / 60));
+      updateDisplay();
+    }
+
+    els.start.addEventListener("click", toggleStart);
+    els.pause.addEventListener("click", stop);
+    els.skip.addEventListener("click", nextPhase);
+    els.reset.addEventListener("click", reset);
+
+    function seekProgress(clientX) {
+      const rect = els.progress.getBoundingClientRect();
+      const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+      state.remaining = Math.max(0.1, state.phaseTotal * (1 - ratio));
+      updateDisplay();
+    }
+
+    function seekFromEvent(event) {
+      const point = event.touches ? event.touches[0] : event;
+      if (!point) return;
+      seekProgress(point.clientX);
+    }
+
+    let seeking = false;
+    els.progress.addEventListener("pointerdown", (event) => {
+      seeking = true;
+      els.progress.setPointerCapture(event.pointerId);
+      seekFromEvent(event);
+    });
+    els.progress.addEventListener("pointermove", (event) => {
+      if (!seeking) return;
+      seekFromEvent(event);
+    });
+    els.progress.addEventListener("pointerup", (event) => {
+      seeking = false;
+      els.progress.releasePointerCapture(event.pointerId);
+      seekFromEvent(event);
+    });
+    els.progress.addEventListener("keydown", (event) => {
+      if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+      event.preventDefault();
+      const step = event.key === "ArrowRight" ? -30 : 30;
+      state.remaining = Math.min(state.phaseTotal, Math.max(0.1, state.remaining + step));
+      updateDisplay();
+    });
+
+    [els.restMinutes, els.restLabel].forEach((input) => {
+      input.addEventListener("change", reset);
+    });
+
+    els.activeMinutes.addEventListener("change", () => {
+      const total = readNumber(els.activeMinutes, 20);
+      const modes = readModes();
+      if (modes.length === 0) {
+        renderModes([{ name: "Normal", minutes: total }]);
+      } else {
+        const first = modes[0];
+        renderModes([{ name: first.name || "Normal", minutes: total }, ...modes.slice(1)]);
+      }
+      reset();
+    });
+
+    els.addMode.addEventListener("click", () => {
+      addModeRow("Normal", 5);
+      reset();
+    });
+
+    els.resetModes.addEventListener("click", () => {
+      renderModes(defaultModes);
+      reset();
+    });
+
+    els.areaSelect.addEventListener("change", () => {
+      fillAreaForm(selectedArea());
+    });
+
+    els.saveArea.addEventListener("click", () => {
+      const name = els.areaName.value.trim();
+      if (!name) {
+        els.areaName.focus();
+        return;
+      }
+
+      const areas = readAreas();
+      const existing = selectedArea();
+      const id = existing?.id || `area-${Date.now()}`;
+      const nextArea = {
+        id,
+        name,
+        description: els.areaDescription.value.trim(),
+        config: currentConfig(),
+        savedAt: new Date().toISOString()
+      };
+      const nextAreas = existing
+        ? areas.map((area) => area.id === id ? nextArea : area)
+        : [...areas, nextArea];
+      writeAreas(nextAreas);
+      els.areaSelect.value = id;
+    });
+
+    els.loadArea.addEventListener("click", () => {
+      const area = selectedArea();
+      if (!area) return;
+      fillAreaForm(area);
+      applyConfig(area.config);
+    });
+
+    els.deleteArea.addEventListener("click", () => {
+      const area = selectedArea();
+      if (!area) return;
+      writeAreas(readAreas().filter((entry) => entry.id !== area.id));
+      fillAreaForm(null);
+    });
+
+    function updateBridgeAvailable() {
+      return typeof window.AstraUpdater !== "undefined";
+    }
+
+    function setUpdateStatus(message) {
+      els.updateStatus.textContent = message;
+    }
+
+    function loadUpdateSettings() {
+      const savedUrl = localStorage.getItem(updateUrlKey) || "";
+      els.updateManifestUrl.value = savedUrl;
+
+      if (updateBridgeAvailable()) {
+        const name = window.AstraUpdater.currentVersionName();
+        const code = window.AstraUpdater.currentVersionCode();
+        els.appVersion.textContent = `Installiert: ${name} (${code})`;
+        setUpdateStatus(savedUrl
+          ? "Update-Quelle bereit. Die App prüft nur, wenn du es auslöst."
+          : "Noch keine Update-Quelle gespeichert.");
+      } else {
+        els.appVersion.textContent = "Browser-Vorschau";
+        setUpdateStatus("Updater ist nur in der installierten Android-App aktiv.");
+      }
+    }
+
+    els.saveUpdateUrl.addEventListener("click", () => {
+      const url = els.updateManifestUrl.value.trim();
+      if (!url) {
+        setUpdateStatus("Bitte zuerst die Update-Quelle eintragen.");
+        return;
+      }
+      localStorage.setItem(updateUrlKey, url);
+      setUpdateStatus("Update-Quelle gespeichert.");
+    });
+
+    els.clearUpdate.addEventListener("click", () => {
+      localStorage.removeItem(updateUrlKey);
+      els.updateManifestUrl.value = "";
+      state.pendingUpdateApk = "";
+      els.installUpdate.disabled = true;
+      setUpdateStatus("Update-Quelle gelöscht.");
+    });
+
+    els.checkUpdate.addEventListener("click", () => {
+      const url = els.updateManifestUrl.value.trim();
+      if (!updateBridgeAvailable()) {
+        setUpdateStatus("Updater ist nur in der installierten Android-App aktiv.");
+        return;
+      }
+      if (!url) {
+        setUpdateStatus("Bitte zuerst die Update-Quelle eintragen.");
+        return;
+      }
+
+      localStorage.setItem(updateUrlKey, url);
+      state.pendingUpdateApk = "";
+      els.installUpdate.disabled = true;
+      setUpdateStatus("Update wird geprüft...");
+      window.AstraUpdater.checkUpdate(url);
+    });
+
+    els.installUpdate.addEventListener("click", () => {
+      if (!state.pendingUpdateApk || !updateBridgeAvailable()) return;
+      setUpdateStatus("Update wird geladen. Danach öffnet Android die Installation.");
+      window.AstraUpdater.installUpdate(state.pendingUpdateApk);
+    });
+
+    window.astraUpdateResult = function(result) {
+      if (!result || !result.ok) {
+        setUpdateStatus(`Update-Prüfung fehlgeschlagen:\n${result?.error || "Unbekannter Fehler"}`);
+        return;
+      }
+
+      const currentCode = Number(result.currentVersionCode || 0);
+      const nextCode = Number(result.versionCode || 0);
+      const notes = result.notes ? `\n\nAenderungen:\n${result.notes}` : "";
+
+      if (!result.apkUrl) {
+        setUpdateStatus("Update-Datei gefunden, aber apkUrl fehlt im Manifest.");
+        return;
+      }
+
+      if (nextCode > currentCode) {
+        state.pendingUpdateApk = result.apkUrl;
+        els.installUpdate.disabled = false;
+        setUpdateStatus(`Neue Version verfügbar: ${result.versionName} (${nextCode})\nInstalliert: ${result.currentVersionName} (${currentCode})${notes}`);
+        return;
+      }
+
+      state.pendingUpdateApk = "";
+      els.installUpdate.disabled = true;
+      setUpdateStatus(`Astra Pulse ist aktuell.\nInstalliert: ${result.currentVersionName} (${currentCode})${notes}`);
+    };
+
+    window.astraUpdateInstallResult = function(result) {
+      if (!result || result.ok) return;
+      setUpdateStatus(`Update konnte nicht installiert werden:\n${result.error || "Unbekannter Fehler"}`);
+    };
+
+    document.querySelectorAll("[data-preset]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const [active, rest, rounds] = button.dataset.preset.split(",");
+        renderModes([
+          { name: "Normal", minutes: Number(active) || 20 },
+          { name: "Speed", minutes: Number(active) || 20 },
+          { name: "Fokus", minutes: Number(active) || 20 }
+        ]);
+        els.restMinutes.value = rest;
+        reset();
+      });
+    });
+
+    window.addEventListener("beforeinstallprompt", (event) => {
+      event.preventDefault();
+      state.installPrompt = event;
+      els.installBox.classList.add("show");
+    });
+
+    els.installButton.addEventListener("click", async () => {
+      if (!state.installPrompt) return;
+      state.installPrompt.prompt();
+      await state.installPrompt.userChoice;
+      state.installPrompt = null;
+      els.installBox.classList.remove("show");
+    });
+
+    if ("serviceWorker" in navigator && location.protocol !== "file:") {
+      navigator.serviceWorker.register("service-worker.js").catch(() => {});
+    }
+
+    renderModes(defaultModes);
+    loadSettings();
+    renderAreas();
+    loadUpdateSettings();
+    reset();
+  </script>
+</body>
+</html>

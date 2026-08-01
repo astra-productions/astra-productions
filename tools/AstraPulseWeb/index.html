@@ -1,0 +1,797 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#130711">
+  <meta name="description" content="Astra Productions entwickelt digitale Tools, die konkrete Ablaeufe einfacher machen. Astra Pulse ist das erste oeffentliche Tool.">
+  <title>Astra Productions</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="intervall-icon.svg" type="image/svg+xml">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #09050b;
+      --panel: rgba(32, 19, 34, 0.82);
+      --panel-strong: rgba(43, 24, 49, 0.94);
+      --line: rgba(255, 126, 194, 0.34);
+      --line-blue: rgba(98, 223, 255, 0.32);
+      --text: #fff4fb;
+      --muted: #cdb8c8;
+      --pink: #ff66b6;
+      --cyan: #78f5e1;
+      --gold: #ffd87a;
+      --dark: #100712;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 18% 12%, rgba(255, 102, 182, 0.22), transparent 34%),
+        radial-gradient(circle at 88% 8%, rgba(120, 245, 225, 0.16), transparent 30%),
+        linear-gradient(145deg, #110712 0%, #09050b 52%, #120715 100%);
+      color: var(--text);
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .page {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 22px 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .brand img {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      box-shadow: 0 14px 34px rgba(255, 102, 182, 0.18);
+    }
+
+    .brand strong {
+      display: block;
+      font-size: 1.05rem;
+      letter-spacing: 0;
+    }
+
+    .brand span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.88rem;
+      margin-top: 2px;
+    }
+
+    .nav {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .nav a,
+    .button {
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text);
+      text-decoration: none;
+      border-radius: 999px;
+      padding: 10px 15px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .button.primary {
+      border: 0;
+      color: #180914;
+      background: linear-gradient(110deg, var(--pink), var(--gold));
+      box-shadow: 0 14px 36px rgba(255, 102, 182, 0.24);
+    }
+
+    .hero {
+      min-height: calc(100vh - 92px);
+      display: grid;
+      align-items: center;
+      padding: 42px 0 72px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(300px, 430px);
+      gap: 48px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--cyan);
+      border: 1px solid rgba(120, 245, 225, 0.34);
+      background: rgba(120, 245, 225, 0.08);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-weight: 800;
+      font-size: 0.84rem;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: clamp(3rem, 8vw, 7.4rem);
+      line-height: 0.92;
+      letter-spacing: 0;
+      margin: 0;
+    }
+
+    .lead {
+      color: var(--muted);
+      font-size: clamp(1.05rem, 2vw, 1.32rem);
+      line-height: 1.6;
+      max-width: 680px;
+      margin: 24px 0 0;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 32px;
+    }
+
+    .trust {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 34px;
+      max-width: 720px;
+    }
+
+    .trust span,
+    .feature,
+    .install-card,
+    .privacy {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      backdrop-filter: blur(18px);
+      border-radius: 18px;
+    }
+
+    .trust span {
+      padding: 13px 14px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .phone {
+      border: 1px solid rgba(255, 126, 194, 0.48);
+      border-radius: 36px;
+      background: linear-gradient(180deg, rgba(255, 126, 194, 0.18), rgba(13, 8, 17, 0.96));
+      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.4);
+      padding: 20px;
+      min-height: 620px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .phone-top {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .timer-card {
+      border: 1px solid rgba(255, 126, 194, 0.36);
+      border-radius: 26px;
+      padding: 26px 22px;
+      background: rgba(12, 7, 15, 0.78);
+    }
+
+    .timer-state {
+      color: var(--pink);
+      font-weight: 900;
+      text-transform: uppercase;
+      margin-bottom: 22px;
+    }
+
+    .timer {
+      font-size: clamp(4.4rem, 12vw, 6.8rem);
+      line-height: 1;
+      font-weight: 900;
+      color: #ffc1e5;
+      text-align: center;
+      margin: 26px 0;
+    }
+
+    .progress {
+      height: 18px;
+      border-radius: 999px;
+      background: #080509;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+    }
+
+    .progress i {
+      display: block;
+      width: 68%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--pink), var(--gold));
+      border-radius: inherit;
+    }
+
+    .mini-button {
+      display: grid;
+      place-items: center;
+      min-height: 78px;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 126, 194, 0.28);
+      background: rgba(255, 255, 255, 0.04);
+      font-weight: 900;
+      font-size: 1.25rem;
+    }
+
+    .mini-button.start {
+      color: #180914;
+      background: linear-gradient(110deg, var(--pink), var(--gold));
+    }
+
+    .section {
+      padding: 70px 0;
+    }
+
+    .section h2 {
+      margin: 0 0 12px;
+      font-size: clamp(2rem, 4vw, 3.6rem);
+      letter-spacing: 0;
+    }
+
+    .section > p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 760px;
+      line-height: 1.65;
+      font-size: 1.05rem;
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 28px;
+    }
+
+    .feature {
+      padding: 24px;
+      min-height: 190px;
+    }
+
+    .feature strong {
+      display: block;
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+    }
+
+    .feature p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .install {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .install-card,
+    .privacy {
+      padding: 28px;
+    }
+
+    .install-card ol {
+      padding-left: 20px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .privacy p {
+      color: var(--muted);
+      line-height: 1.65;
+      margin-bottom: 0;
+    }
+
+    .overview-board {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 24px;
+      margin-top: 32px;
+    }
+
+    .board-card {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      backdrop-filter: blur(18px);
+      border-radius: 26px;
+      padding: 28px;
+      min-height: 170px;
+    }
+
+    .board-card.large {
+      min-height: 320px;
+    }
+
+    .board-card strong {
+      display: block;
+      font-size: 1.18rem;
+      margin-bottom: 12px;
+    }
+
+    .board-card p,
+    .board-card li {
+      margin-top: 0;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    .board-card ul {
+      margin: 14px 0 0;
+      padding-left: 20px;
+    }
+
+    .tool-strip {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      align-items: center;
+      margin-top: 6px;
+    }
+
+    .tool-strip .tool-card {
+      min-height: 96px;
+      border-radius: 999px;
+      padding: 18px 34px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .tool-strip .tool-card.wide {
+      grid-column: 1 / -1;
+      width: min(640px, 100%);
+      justify-self: center;
+    }
+
+    .tool-strip .tool-card small {
+      margin-bottom: 6px;
+    }
+
+    .tool-strip .tool-card strong {
+      margin-bottom: 0;
+    }
+
+    .tool-strip .tool-card p {
+      display: none;
+    }
+
+    .board-bottom {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 24px;
+    }
+
+    .tool-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 28px;
+    }
+
+    .tool-card {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 18px;
+      padding: 24px;
+      min-height: 210px;
+      text-align: left;
+      cursor: pointer;
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+    }
+
+    .tool-card:hover,
+    .tool-card.active {
+      transform: translateY(-2px);
+      border-color: rgba(255, 216, 122, 0.74);
+      background: var(--panel-strong);
+    }
+
+    .tool-card small {
+      display: inline-flex;
+      color: var(--cyan);
+      font-weight: 900;
+      margin-bottom: 18px;
+    }
+
+    .tool-card strong {
+      display: block;
+      font-size: 1.35rem;
+      margin-bottom: 10px;
+    }
+
+    .tool-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 1rem;
+    }
+
+    .tool-detail {
+      margin-top: 18px;
+      border: 1px solid var(--line-blue);
+      border-radius: 22px;
+      padding: 30px;
+      background: rgba(14, 12, 22, 0.86);
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
+      gap: 22px;
+      align-items: start;
+    }
+
+    .tool-detail h3 {
+      font-size: clamp(1.8rem, 3vw, 2.8rem);
+      margin: 0 0 12px;
+    }
+
+    .tool-detail p,
+    .tool-detail li {
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    .tool-detail ul {
+      padding-left: 20px;
+      margin: 16px 0 0;
+    }
+
+    .detail-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 22px;
+    }
+
+    footer {
+      padding: 34px 0 54px;
+      color: var(--muted);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    @media (max-width: 860px) {
+      .topbar,
+      .hero-grid,
+      .install {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        align-items: flex-start;
+      }
+
+      .nav {
+        justify-content: flex-start;
+      }
+
+      .hero {
+        min-height: auto;
+        padding-top: 22px;
+      }
+
+      .phone {
+        min-height: 500px;
+      }
+
+      .trust,
+      .features,
+      .overview-board,
+      .tool-strip,
+      .board-bottom,
+      .tool-grid,
+      .tool-detail {
+        grid-template-columns: 1fr;
+      }
+
+      .board-card.large {
+        min-height: 220px;
+      }
+
+      .tool-strip .tool-card.wide {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="page topbar" id="start">
+    <a class="brand" href="index.html" aria-label="Astra Productions Startseite">
+      <img src="intervall-icon.svg" alt="">
+      <span>
+        <strong>Astra Productions</strong>
+        <span>Tools, Apps und digitale Ideen</span>
+      </span>
+    </a>
+    <nav class="nav" aria-label="Navigation">
+      <a href="#uebersicht">Uebersicht</a>
+      <a href="#idee">Idee</a>
+      <a href="#kontakt">Kontakt</a>
+      <a href="#tools">Tools</a>
+      <a href="#impressum">Impressum</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="page hero-grid">
+        <div>
+          <div class="eyebrow">Astra Productions</div>
+          <h1>Digitale Tools mit klarem Zweck</h1>
+          <p class="lead">
+            Astra Productions ist der Schirm fuer kleine, praktische Anwendungen. Jedes Tool
+            soll ein konkretes Problem loesen, verstaendlich bleiben und ohne unnoetige
+            Datensammlung funktionieren.
+          </p>
+          <div class="actions">
+            <a class="button primary" href="#tools">Tools ansehen</a>
+            <a class="button" href="#kontakt">Idee einreichen</a>
+          </div>
+          <div class="trust" aria-label="Kurzinfos">
+            <span>Praktische Werkzeuge</span>
+            <span>Faire Entwicklung</span>
+            <span>Klare Bedienung</span>
+          </div>
+        </div>
+
+        <div class="phone" aria-label="Astra Productions Vorschau">
+          <div class="phone-top">
+            <span>Astra Tools</span>
+            <span>Beta</span>
+          </div>
+          <div class="timer-card">
+            <div class="timer-state">Tool-Kachel</div>
+            <div class="timer">01</div>
+            <div class="progress"><i></i></div>
+          </div>
+          <div class="mini-button start">ASTRA PULSE</div>
+          <div class="mini-button">ASTRA COMMAND</div>
+          <div class="mini-button">WEITERE IDEEN</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="page section" id="uebersicht">
+      <h2>Astra Productions</h2>
+      <p>
+        Die zentrale Anlaufstelle fuer Astra-Tools, Ideen, Kontakt und spaetere Downloads.
+      </p>
+
+      <div class="overview-board">
+        <article class="board-card large" id="was-ist-astra">
+          <strong>Was ist Astra Productions?</strong>
+          <p>
+            Astra Productions ist der Schirm fuer digitale Werkzeuge, die konkrete Ablaeufe
+            einfacher machen sollen. Nicht jedes Tool muss gross sein. Wichtig ist, dass es
+            verstaendlich bleibt, einen echten Nutzen hat und sauber weiterentwickelt werden kann.
+          </p>
+          <ul>
+            <li>Astra Pulse ist das erste oeffentliche Tool.</li>
+            <li>Astra Command wird als eigener Bereich fuer Elite Dangerous vorbereitet.</li>
+            <li>Weitere Tools koennen spaeter unter demselben Schirm dazukommen.</li>
+          </ul>
+        </article>
+
+        <article class="board-card large" id="kontakt">
+          <strong>Kontaktmoeglichkeiten</strong>
+          <p>
+            Fuer Fragen, Fehler, Ideen oder Vorschlaege kannst du dich direkt melden. Bitte
+            schreibe kurz dazu, welches Tool gemeint ist und was du dir wuenschst oder was
+            nicht funktioniert.
+          </p>
+          <ul>
+            <li><a href="mailto:astra.productions@outlook.de">astra.productions@outlook.de</a></li>
+            <li>Discord und Social-Media-Links werden ergaenzt, sobald sie offiziell bereit sind.</li>
+          </ul>
+        </article>
+
+        <div class="tool-strip" id="tools" aria-label="Astra Tool-Bereiche">
+          <button class="tool-card" type="button" data-tool="command">
+            <small>In Entwicklung</small>
+            <strong>Astra Command Tool</strong>
+            <p>Elite-Dangerous-Tool fuer Missionsplanung, Powerplay und Commander-Uebersicht.</p>
+          </button>
+          <button class="tool-card active" type="button" data-tool="pulse">
+            <small>Verfuegbar</small>
+            <strong>Astra Pulse Tool</strong>
+            <p>Intervall-Timer fuer eigene Bereiche, Phasen und Pausen.</p>
+          </button>
+          <button class="tool-card wide" type="button" data-tool="future">
+            <small>Geplant</small>
+            <strong>Weitere Tools</strong>
+            <p>Neue Tool-Bereiche werden ergaenzt, sobald sie einen klaren Nutzen haben.</p>
+          </button>
+        </div>
+
+        <div class="board-bottom">
+          <article class="board-card">
+            <strong>Datenschutz</strong>
+            <p>
+              Astra Pulse arbeitet lokal und erhebt fuer den Timerbetrieb keine Nutzerdaten.
+              Weitere Tools sollen ebenfalls datensparsam aufgebaut werden.
+            </p>
+          </article>
+          <article class="board-card">
+            <strong>Moegliche Partner</strong>
+            <p>
+              Kooperationen sollen thematisch passen und die Nutzung nicht stoeren. Qualitaet
+              und Vertrauen stehen vor schneller Werbung.
+            </p>
+          </article>
+          <article class="board-card">
+            <strong>Social Media Links</strong>
+            <p>
+              Offizielle Kanaele werden hier verlinkt, sobald Astra Productions dafuer eigene
+              Profile nutzt.
+            </p>
+          </article>
+        </div>
+      </div>
+
+      <div class="tool-detail" id="toolDetail" aria-live="polite"></div>
+    </section>
+
+    <section class="page section" id="idee">
+      <h2>Was ist die Idee?</h2>
+      <p>
+        Viele Tools sind entweder ueberladen, zu technisch oder sammeln mehr Daten, als sie
+        brauchen. Astra soll anders aufgebaut sein: kleine Funktionen, klarer Nutzen und
+        Erweiterungen nur dort, wo sie wirklich helfen.
+      </p>
+      <div class="features">
+        <article class="feature">
+          <strong>Ein Problem pro Tool</strong>
+          <p>Jedes Astra-Tool bekommt eine klare Aufgabe, damit Bedienung und Nutzen verstaendlich bleiben.</p>
+        </article>
+        <article class="feature">
+          <strong>Feedback willkommen</strong>
+          <p>Ideen, Fehler und Verbesserungsvorschlaege sollen direkt in die weitere Entwicklung einfließen.</p>
+        </article>
+        <article class="feature">
+          <strong>Ausbau mit Augenmaß</strong>
+          <p>Neue Funktionen sollen nuetzlich sein und nicht einfach eingebaut werden, nur weil es technisch moeglich ist.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="page section" id="impressum">
+      <h2>Impressum</h2>
+      <div class="privacy">
+        <strong>Angaben folgen vor der oeffentlichen Veroeffentlichung</strong>
+        <p>
+          Dieses Impressum ist ein Platzhalter fuer die Testphase. Vor einer oeffentlichen
+          Veroeffentlichung muessen hier die korrekten Anbieterangaben, Kontaktmoeglichkeiten
+          und die rechtlich erforderlichen Informationen eingetragen werden.
+        </p>
+        <p>
+          Kontakt fuer die Testphase: astra.productions@outlook.de
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="page">
+    Astra Productions. Erste Web-Version fuer den freien Testbetrieb. <a href="#impressum">Impressum</a>
+  </footer>
+
+  <script>
+    const toolData = {
+      pulse: {
+        title: "Astra Pulse",
+        text: "Astra Pulse ist ein lokaler Intervall-Timer. Nutzer koennen eigene Bereiche anlegen, Phasen frei benennen und den Ablauf an das anpassen, was sie gerade brauchen.",
+        points: [
+          "Bereiche und Zeiten bleiben lokal auf dem Geraet.",
+          "Im Browser nutzbar und als Web-App installierbar.",
+          "Keine Konto-Pflicht und keine Datenerhebung fuer den Timerbetrieb."
+        ],
+        actions: [
+          ["Astra Pulse oeffnen", "IntervallTimer.html", "primary"],
+          ["Kontakt aufnehmen", "#kontakt", ""]
+        ]
+      },
+      command: {
+        title: "Astra Command",
+        text: "Astra Command ist als Elite-Dangerous-Tool geplant. Der Fokus liegt auf Nischenfunktionen, die bestehende grosse Tools nicht oder nur eingeschraenkt abdecken.",
+        points: [
+          "Geplant sind Commander-Dashboard, Missionswerkzeuge und Powerplay-Unterstuetzung.",
+          "Der alte Python-Prototyp ist ueberholt; die neue Basis soll sauberer entstehen.",
+          "Weitere Informationen folgen, sobald der neue Aufbau stabil ist."
+        ],
+        actions: [
+          ["Feedback geben", "#kontakt", "primary"]
+        ]
+      },
+      future: {
+        title: "Weitere Astra Tools",
+        text: "Astra Productions soll langfristig mehrere Werkzeuge unter einem Schirm sammeln. Neue Tools werden nur aufgenommen, wenn sie einen klaren Nutzen haben.",
+        points: [
+          "Ideen koennen vorgeschlagen und spaeter bewertet werden.",
+          "Jedes Tool bekommt einen eigenen Bereich mit Informationen und Links.",
+          "Die Website bleibt die zentrale Anlaufstelle."
+        ],
+        actions: [
+          ["Idee einreichen", "#kontakt", "primary"]
+        ]
+      }
+    };
+
+    const detail = document.getElementById("toolDetail");
+    const cards = document.querySelectorAll(".tool-card");
+
+    function renderTool(toolKey) {
+      const tool = toolData[toolKey] || toolData.pulse;
+      detail.innerHTML = `
+        <div>
+          <h3>${tool.title}</h3>
+          <p>${tool.text}</p>
+          <ul>${tool.points.map((point) => `<li>${point}</li>`).join("")}</ul>
+        </div>
+        <div>
+          <strong>Links und naechste Schritte</strong>
+          <div class="detail-actions">
+            ${tool.actions.map(([label, href, style]) => `<a class="button ${style}" href="${href}">${label}</a>`).join("")}
+          </div>
+        </div>
+      `;
+      cards.forEach((card) => card.classList.toggle("active", card.dataset.tool === toolKey));
+    }
+
+    cards.forEach((card) => {
+      card.addEventListener("click", () => renderTool(card.dataset.tool));
+    });
+
+    renderTool("pulse");
+
+    if ("serviceWorker" in navigator && location.protocol !== "file:") {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("service-worker.js").catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

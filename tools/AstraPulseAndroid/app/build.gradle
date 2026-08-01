@@ -1,0 +1,24 @@
+plugins {
+    id "com.android.application"
+}
+
+android {
+    namespace "de.astra.pulse"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "de.astra.pulse"
+        minSdk 23
+        targetSdk 35
+        versionCode 3
+        versionName "1.2"
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+}
+
+dependencies {
+    implementation "androidx.core:core:1.13.1"
+}
