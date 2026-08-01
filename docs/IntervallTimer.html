@@ -597,7 +597,7 @@
       <div class="archive-actions">
         <button id="saveArea" type="button" class="primary">BEREICH SPEICHERN</button>
         <button id="loadArea" type="button">LADEN</button>
-        <button id="deleteArea" type="button" class="danger">LOESCHEN</button>
+        <button id="deleteArea" type="button" class="danger">LÖSCHEN</button>
       </div>
     </section>
 
@@ -611,7 +611,7 @@
       </label>
       <div class="update-actions">
         <button id="saveUpdateUrl" type="button">URL SPEICHERN</button>
-        <button id="checkUpdate" type="button" class="primary">UPDATE PRUEFEN</button>
+        <button id="checkUpdate" type="button" class="primary">UPDATE PRÜFEN</button>
         <button id="installUpdate" type="button" disabled>UPDATE INSTALLIEREN</button>
         <button id="clearUpdate" type="button" class="danger">URL LEEREN</button>
       </div>
@@ -1087,7 +1087,7 @@
         const code = window.AstraUpdater.currentVersionCode();
         els.appVersion.textContent = `Installiert: ${name} (${code})`;
         setUpdateStatus(savedUrl
-          ? "Update-Quelle bereit. Die App prueft nur, wenn du es ausloest."
+          ? "Update-Quelle bereit. Die App prüft nur, wenn du es auslöst."
           : "Noch keine Update-Quelle gespeichert.");
       } else {
         els.appVersion.textContent = "Browser-Vorschau";
@@ -1110,7 +1110,7 @@
       els.updateManifestUrl.value = "";
       state.pendingUpdateApk = "";
       els.installUpdate.disabled = true;
-      setUpdateStatus("Update-Quelle geloescht.");
+      setUpdateStatus("Update-Quelle gelöscht.");
     });
 
     els.checkUpdate.addEventListener("click", () => {
@@ -1127,25 +1127,25 @@
       localStorage.setItem(updateUrlKey, url);
       state.pendingUpdateApk = "";
       els.installUpdate.disabled = true;
-      setUpdateStatus("Update wird geprueft...");
+      setUpdateStatus("Update wird geprüft...");
       window.AstraUpdater.checkUpdate(url);
     });
 
     els.installUpdate.addEventListener("click", () => {
       if (!state.pendingUpdateApk || !updateBridgeAvailable()) return;
-      setUpdateStatus("Update wird geladen. Danach oeffnet Android die Installation.");
+      setUpdateStatus("Update wird geladen. Danach öffnet Android die Installation.");
       window.AstraUpdater.installUpdate(state.pendingUpdateApk);
     });
 
     window.astraUpdateResult = function(result) {
       if (!result || !result.ok) {
-        setUpdateStatus(`Update-Pruefung fehlgeschlagen:\n${result?.error || "Unbekannter Fehler"}`);
+        setUpdateStatus(`Update-Prüfung fehlgeschlagen:\n${result?.error || "Unbekannter Fehler"}`);
         return;
       }
 
       const currentCode = Number(result.currentVersionCode || 0);
       const nextCode = Number(result.versionCode || 0);
-      const notes = result.notes ? `\n\nAenderungen:\n${result.notes}` : "";
+      const notes = result.notes ? `\n\nÄnderungen:\n${result.notes}` : "";
 
       if (!result.apkUrl) {
         setUpdateStatus("Update-Datei gefunden, aber apkUrl fehlt im Manifest.");
@@ -1155,7 +1155,7 @@
       if (nextCode > currentCode) {
         state.pendingUpdateApk = result.apkUrl;
         els.installUpdate.disabled = false;
-        setUpdateStatus(`Neue Version verfuegbar: ${result.versionName} (${nextCode})\nInstalliert: ${result.currentVersionName} (${currentCode})${notes}`);
+        setUpdateStatus(`Neue Version verfügbar: ${result.versionName} (${nextCode})\nInstalliert: ${result.currentVersionName} (${currentCode})${notes}`);
         return;
       }
 
