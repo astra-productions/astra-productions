@@ -1,0 +1,19 @@
+{
+  "name": "Astra Pulse Timer",
+  "short_name": "Astra Pulse",
+  "description": "Werbefreier lokaler Intervall-Timer mit frei planbaren Bereichen, Pausen und Statusphasen.",
+  "start_url": "IntervallTimer.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#09050b",
+  "theme_color": "#130711",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "intervall-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

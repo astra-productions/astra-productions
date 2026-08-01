@@ -1,0 +1,1210 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#130711">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Astra Pulse">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="intervall-icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="intervall-icon.svg">
+  <title>Astra Pulse Timer</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #09050b;
+      --panel: rgba(26, 14, 28, 0.76);
+      --panel-strong: rgba(39, 19, 43, 0.9);
+      --line: #ff5bbd;
+      --line-soft: rgba(255, 91, 189, 0.32);
+      --text: #fff4fb;
+      --muted: #cdb3c6;
+      --active: #ff6bbd;
+      --rest: #35e6c4;
+      --danger: #ff596f;
+      --gold: #ffd166;
+      --shadow: rgba(255, 91, 189, 0.28);
+      --button: rgba(36, 21, 40, 0.84);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      min-height: 100%;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: max(14px, env(safe-area-inset-top)) 14px max(18px, env(safe-area-inset-bottom));
+      background:
+        linear-gradient(135deg, rgba(255, 91, 189, 0.24), transparent 34%),
+        linear-gradient(225deg, rgba(53, 230, 196, 0.14), transparent 36%),
+        linear-gradient(180deg, #130711 0%, #09050b 56%, #040205 100%);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(180deg, rgba(0,0,0,0.55), transparent 78%);
+    }
+
+    .app {
+      width: min(560px, 100%);
+      display: grid;
+      gap: 16px;
+      align-content: start;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 4px 2px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .logo {
+      width: 42px;
+      height: 42px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      background: linear-gradient(145deg, #ff5bbd, #6b38ff 58%, #201023);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 12px 34px rgba(255, 91, 189, 0.28);
+      flex: 0 0 auto;
+    }
+
+    .logo span {
+      color: #fff;
+      font-weight: 900;
+      font-size: 1.25rem;
+      text-shadow: 0 0 18px rgba(255, 255, 255, 0.55);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.2rem;
+      letter-spacing: 0;
+      line-height: 1.1;
+    }
+
+    .subtitle {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .pill {
+      border: 1px solid rgba(53, 230, 196, 0.48);
+      border-radius: 999px;
+      color: #9af7e6;
+      padding: 8px 11px;
+      font-size: 0.74rem;
+      font-weight: 800;
+      background: rgba(53, 230, 196, 0.08);
+      white-space: nowrap;
+      box-shadow: inset 0 0 18px rgba(53, 230, 196, 0.08);
+    }
+
+    .card {
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+      background: var(--panel);
+      backdrop-filter: blur(18px);
+      box-shadow:
+        0 18px 50px rgba(0, 0, 0, 0.36),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+
+    .timer-card {
+      position: relative;
+      overflow: hidden;
+      padding: 20px;
+      display: grid;
+      gap: 14px;
+      background:
+        linear-gradient(145deg, rgba(255, 91, 189, 0.16), transparent 34%),
+        linear-gradient(315deg, rgba(53, 230, 196, 0.12), transparent 38%),
+        var(--panel-strong);
+    }
+
+    .timer-card::before {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 6px;
+      pointer-events: none;
+    }
+
+    .phase-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .phase {
+      font-size: 0.9rem;
+      font-weight: 900;
+      color: var(--active);
+      text-transform: uppercase;
+      letter-spacing: 0;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(255, 91, 189, 0.1);
+      border: 1px solid rgba(255, 91, 189, 0.22);
+    }
+
+    .phase.rest {
+      color: var(--rest);
+      background: rgba(53, 230, 196, 0.1);
+      border-color: rgba(53, 230, 196, 0.22);
+    }
+
+    .round {
+      color: var(--muted);
+      font-size: 0.85rem;
+      white-space: nowrap;
+    }
+
+    .clock {
+      font-variant-numeric: tabular-nums;
+      text-align: center;
+      font-weight: 900;
+      line-height: 0.95;
+      font-size: clamp(4.8rem, 26vw, 9.8rem);
+      letter-spacing: 0;
+      padding: 12px 0 6px;
+      background: linear-gradient(180deg, #ffffff 0%, #ffc8ec 42%, #ff6bbd 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 0 36px rgba(255, 91, 189, 0.16);
+    }
+
+    .progress {
+      height: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      background: rgba(4, 2, 5, 0.72);
+      overflow: hidden;
+      cursor: pointer;
+      touch-action: none;
+      box-shadow: inset 0 1px 8px rgba(0, 0, 0, 0.55);
+    }
+
+    .bar {
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #ff6bbd, #ffd166, #35e6c4);
+      box-shadow: 0 0 18px rgba(255, 91, 189, 0.42);
+      transition: width 0.25s linear;
+    }
+
+    .progress.rest .bar {
+      background: linear-gradient(90deg, #35e6c4, #8b4dff);
+      box-shadow: 0 0 18px rgba(53, 230, 196, 0.4);
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    button, input, textarea, select {
+      font: inherit;
+      border-radius: 8px;
+    }
+
+    button {
+      min-height: 50px;
+      border: 1px solid var(--line-soft);
+      background: var(--button);
+      color: var(--text);
+      font-weight: 900;
+      cursor: pointer;
+      touch-action: manipulation;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+    }
+
+    button:hover {
+      border-color: rgba(255, 255, 255, 0.28);
+      background: rgba(48, 27, 53, 0.95);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button.primary {
+      background: linear-gradient(135deg, #ff6bbd, #ffd166);
+      border-color: rgba(255, 255, 255, 0.22);
+      color: #230816;
+    }
+
+    button.warn {
+      background: rgba(53, 230, 196, 0.1);
+      border-color: rgba(53, 230, 196, 0.54);
+      color: #bafaf0;
+    }
+
+    button.danger {
+      background: rgba(255, 85, 112, 0.11);
+      border-color: rgba(255, 85, 112, 0.7);
+      color: #ffd5dc;
+    }
+
+    .settings {
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .setting-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid var(--line-soft);
+      background: rgba(7, 4, 10, 0.72);
+      color: var(--text);
+      font-size: 1.1rem;
+      font-weight: 900;
+      box-shadow: inset 0 1px 12px rgba(0, 0, 0, 0.34);
+    }
+
+    input {
+      min-height: 48px;
+      text-align: center;
+    }
+
+    textarea {
+      min-height: 96px;
+      padding: 12px;
+      resize: vertical;
+      font-size: 0.95rem;
+      line-height: 1.4;
+      font-weight: 700;
+    }
+
+    select {
+      min-height: 48px;
+      padding: 0 12px;
+      font-size: 0.95rem;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: rgba(255, 209, 102, 0.7);
+      box-shadow:
+        0 0 0 3px rgba(255, 209, 102, 0.1),
+        inset 0 1px 12px rgba(0, 0, 0, 0.34);
+    }
+
+    input[type="text"] {
+      text-align: left;
+      font-size: 0.98rem;
+    }
+
+    .quick {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .mode-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .mode-row {
+      display: grid;
+      grid-template-columns: 1fr 86px 44px;
+      gap: 8px;
+      padding: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.025);
+    }
+
+    .mode-row input {
+      min-height: 42px;
+      font-size: 0.92rem;
+    }
+
+    .mode-row input[type="number"] {
+      text-align: center;
+    }
+
+    .small-danger {
+      min-height: 42px;
+      padding: 0;
+      color: #ffd5dc;
+      border-color: rgba(255, 85, 112, 0.7);
+      background: rgba(255, 85, 112, 0.12);
+    }
+
+    .mode-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .mode-actions button {
+      min-height: 42px;
+      font-size: 0.78rem;
+    }
+
+    .quick button {
+      min-height: 42px;
+      font-size: 0.78rem;
+    }
+
+    .archive {
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .archive-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+    }
+
+    .archive-head h2 {
+      margin: 0;
+      font-size: 1rem;
+      letter-spacing: 0;
+    }
+
+    .version {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+
+    .archive-actions {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .update-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .update-actions button[disabled] {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .update-status {
+      white-space: pre-line;
+    }
+
+    .notice {
+      padding: 13px 15px;
+      color: var(--muted);
+      font-size: 0.86rem;
+      line-height: 1.45;
+      border-color: rgba(255, 209, 102, 0.22);
+    }
+
+    .install {
+      display: none;
+      border-color: rgba(53, 230, 196, 0.55);
+      background: rgba(53, 230, 196, 0.08);
+      padding: 12px;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .install.show {
+      display: flex;
+    }
+
+    .install p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.35;
+    }
+
+    .install button {
+      min-height: 40px;
+      padding: 0 12px;
+      flex: 0 0 auto;
+    }
+
+    @media (max-width: 430px) {
+      body { padding-left: 10px; padding-right: 10px; }
+      .timer-card { padding: 14px; }
+      .setting-grid { grid-template-columns: 1fr; }
+      .status-grid { grid-template-columns: 1fr; }
+      .quick { grid-template-columns: 1fr; }
+      .mode-actions { grid-template-columns: 1fr; }
+      .archive-actions { grid-template-columns: 1fr; }
+      .controls { grid-template-columns: 1fr; }
+      .clock { font-size: clamp(4.4rem, 30vw, 7rem); }
+      .install { align-items: stretch; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"><span>A</span></div>
+        <div>
+          <h1>Astra Pulse</h1>
+          <div class="subtitle">Version 1.2 · Lokal. Werbefrei. Offline bereit.</div>
+        </div>
+      </div>
+      <div class="pill" id="status">BEREIT</div>
+    </header>
+
+    <section class="install card" id="installBox">
+      <p>Du kannst den Timer als App auf den Startbildschirm legen.</p>
+      <button id="installButton">INSTALLIEREN</button>
+    </section>
+
+    <section class="notice card">
+      Kurzregel: Wenn etwas taub, kalt, schmerzhaft, blau/lila oder unangenehm wird, sofort stoppen.
+      Pausen sind Teil des Timers, nicht optionaler Luxus.
+    </section>
+
+    <section class="timer-card card" aria-live="polite">
+      <div class="phase-row">
+        <div class="phase" id="phase">Aktiv</div>
+        <div class="round" id="round">Runde 1 von 3</div>
+      </div>
+      <div class="clock" id="clock">20:00</div>
+      <div class="progress" id="progress" role="slider" aria-label="Fortschritt der aktuellen Phase" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0"><div class="bar" id="bar"></div></div>
+    </section>
+
+    <section class="controls">
+      <button class="primary" id="start">START</button>
+      <button class="warn" id="pause">PAUSE</button>
+      <button id="skip">WEITER</button>
+      <button class="danger" id="reset">RESET</button>
+    </section>
+
+    <section class="settings card">
+      <div class="setting-grid">
+        <label>Standard Aktiv
+          <input id="activeMinutes" type="number" inputmode="numeric" min="1" max="60" value="20">
+        </label>
+        <label>Pause
+          <input id="restMinutes" type="number" inputmode="numeric" min="1" max="60" value="10">
+        </label>
+        <label>Runden
+          <input id="rounds" type="number" inputmode="numeric" min="1" max="12" value="4" disabled>
+        </label>
+      </div>
+      <div class="status-grid">
+        <label>Pause-Status
+          <input id="restLabel" type="text" maxlength="28" value="Pause" list="statusSuggestions">
+        </label>
+        <label>Ablauf
+          <input id="modeHint" type="text" value="Status + Minuten" disabled>
+        </label>
+      </div>
+      <div class="mode-list" id="modeList"></div>
+      <div class="mode-actions">
+        <button id="addMode" type="button">STATUS HINZUFUEGEN</button>
+        <button id="resetModes" type="button">STANDARD STATUS</button>
+      </div>
+      <datalist id="statusSuggestions">
+        <option value="Normal"></option>
+        <option value="Speed"></option>
+        <option value="Slow"></option>
+        <option value="Edge"></option>
+        <option value="Pause"></option>
+        <option value="Check"></option>
+        <option value="Recovery"></option>
+      </datalist>
+      <div class="quick">
+        <button data-preset="20,10,3">20 / 10</button>
+        <button data-preset="15,5,3">15 / 5</button>
+        <button data-preset="10,5,4">10 / 5</button>
+      </div>
+    </section>
+
+    <section class="archive card">
+      <div class="archive-head">
+        <h2>Bereiche / Archiv</h2>
+        <div class="version">Eigene Abläufe</div>
+      </div>
+      <label>Gespeicherte Bereiche
+        <select id="areaSelect">
+          <option value="">Noch kein Bereich gespeichert</option>
+        </select>
+      </label>
+      <label>Bereichsname
+        <input id="areaName" type="text" maxlength="32" placeholder="z.B. Alltag, Training, Eigener Ablauf">
+      </label>
+      <label>Beschreibung
+        <textarea id="areaDescription" maxlength="500" placeholder="Beschreibe hier selbst, wofür dieser Bereich gedacht ist."></textarea>
+      </label>
+      <div class="archive-actions">
+        <button id="saveArea" type="button" class="primary">BEREICH SPEICHERN</button>
+        <button id="loadArea" type="button">LADEN</button>
+        <button id="deleteArea" type="button" class="danger">LOESCHEN</button>
+      </div>
+    </section>
+
+    <section class="archive card">
+      <div class="archive-head">
+        <h2>Updates</h2>
+        <div class="version" id="appVersion">Version wird geladen</div>
+      </div>
+      <label>Update-Quelle
+        <input id="updateManifestUrl" type="text" placeholder="https://.../astra-pulse-update.json">
+      </label>
+      <div class="update-actions">
+        <button id="saveUpdateUrl" type="button">URL SPEICHERN</button>
+        <button id="checkUpdate" type="button" class="primary">UPDATE PRUEFEN</button>
+        <button id="installUpdate" type="button" disabled>UPDATE INSTALLIEREN</button>
+        <button id="clearUpdate" type="button" class="danger">URL LEEREN</button>
+      </div>
+      <div class="notice card update-status" id="updateStatus">Noch keine Update-Quelle gespeichert.</div>
+    </section>
+  </main>
+
+  <script>
+    const storageKey = "astra-interval-timer-settings";
+    const archiveKey = "astra-pulse-areas-v1";
+    const updateUrlKey = "astra-pulse-update-manifest-url";
+    const state = {
+      running: false,
+      phase: "active",
+      currentRound: 1,
+      remaining: 20 * 60,
+      phaseTotal: 20 * 60,
+      timerId: null,
+      lastTick: null,
+      installPrompt: null,
+      pendingUpdateApk: ""
+    };
+
+    const els = {
+      status: document.getElementById("status"),
+      phase: document.getElementById("phase"),
+      clock: document.getElementById("clock"),
+      round: document.getElementById("round"),
+      progress: document.getElementById("progress"),
+      bar: document.getElementById("bar"),
+      start: document.getElementById("start"),
+      pause: document.getElementById("pause"),
+      skip: document.getElementById("skip"),
+      reset: document.getElementById("reset"),
+      activeMinutes: document.getElementById("activeMinutes"),
+      restMinutes: document.getElementById("restMinutes"),
+      rounds: document.getElementById("rounds"),
+      restLabel: document.getElementById("restLabel"),
+      modeList: document.getElementById("modeList"),
+      addMode: document.getElementById("addMode"),
+      resetModes: document.getElementById("resetModes"),
+      areaSelect: document.getElementById("areaSelect"),
+      areaName: document.getElementById("areaName"),
+      areaDescription: document.getElementById("areaDescription"),
+      saveArea: document.getElementById("saveArea"),
+      loadArea: document.getElementById("loadArea"),
+      deleteArea: document.getElementById("deleteArea"),
+      appVersion: document.getElementById("appVersion"),
+      updateManifestUrl: document.getElementById("updateManifestUrl"),
+      saveUpdateUrl: document.getElementById("saveUpdateUrl"),
+      checkUpdate: document.getElementById("checkUpdate"),
+      installUpdate: document.getElementById("installUpdate"),
+      clearUpdate: document.getElementById("clearUpdate"),
+      updateStatus: document.getElementById("updateStatus"),
+      installBox: document.getElementById("installBox"),
+      installButton: document.getElementById("installButton")
+    };
+
+    const defaultModes = [
+      { name: "Normal", minutes: 20 },
+      { name: "Speed", minutes: 20 },
+      { name: "Slow", minutes: 20 },
+      { name: "Edge", minutes: 20 }
+    ];
+
+    function readNumber(input, fallback) {
+      const value = Number.parseInt(input.value, 10);
+      return Number.isFinite(value) ? Math.max(Number(input.min || 1), Math.min(Number(input.max || 999), value)) : fallback;
+    }
+
+    function restSeconds() { return readNumber(els.restMinutes, 10) * 60; }
+    function maxRounds() { return readModes().length; }
+
+    function readModes() {
+      const rows = [...els.modeList.querySelectorAll(".mode-row")];
+      const modes = rows.map((row) => {
+        const name = row.querySelector("[data-mode-name]").value.trim();
+        const minutes = Number.parseInt(row.querySelector("[data-mode-minutes]").value, 10);
+        return {
+          name: name || "Status",
+          minutes: Number.isFinite(minutes) ? Math.max(1, Math.min(60, minutes)) : 1
+        };
+      });
+      return modes.length ? modes : defaultModes;
+    }
+
+    function currentMode() {
+      const modes = readModes();
+      return modes[Math.max(0, Math.min(state.currentRound - 1, modes.length - 1))] || defaultModes[0];
+    }
+
+    function activeModeName() {
+      if (state.phase !== "active") return "";
+      return currentMode().name || "Normal";
+    }
+
+    function currentActiveSeconds() {
+      return Math.max(1, currentMode().minutes || 1) * 60;
+    }
+
+    function renderModes(modes = defaultModes) {
+      els.modeList.innerHTML = "";
+      modes.forEach((mode) => addModeRow(mode.name, mode.minutes));
+      els.rounds.value = readModes().length;
+    }
+
+    function addModeRow(name = "Normal", minutes = 5) {
+      const row = document.createElement("div");
+      row.className = "mode-row";
+      row.innerHTML = `
+        <input data-mode-name type="text" maxlength="24" list="statusSuggestions" value="${escapeHtml(name)}" aria-label="Statusname">
+        <input data-mode-minutes type="number" inputmode="numeric" min="1" max="60" value="${Number(minutes) || 5}" aria-label="Status Minuten">
+        <button class="small-danger" type="button" aria-label="Status entfernen">X</button>
+      `;
+      row.querySelectorAll("input").forEach((input) => {
+        input.addEventListener("change", reset);
+      });
+      row.querySelector("button").addEventListener("click", () => {
+        if (els.modeList.querySelectorAll(".mode-row").length <= 1) {
+          renderModes([{ name: "Normal", minutes: 20 }]);
+        } else {
+          row.remove();
+        }
+        reset();
+      });
+      els.modeList.appendChild(row);
+      els.rounds.value = readModes().length;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    function saveSettings() {
+      const settings = {
+        active: readNumber(els.activeMinutes, 20),
+        rest: readNumber(els.restMinutes, 10),
+        restLabel: els.restLabel.value.trim() || "Pause",
+        modes: readModes()
+      };
+      localStorage.setItem(storageKey, JSON.stringify(settings));
+    }
+
+    function readAreas() {
+      try {
+        const areas = JSON.parse(localStorage.getItem(archiveKey) || "[]");
+        return Array.isArray(areas) ? areas : [];
+      } catch {
+        localStorage.removeItem(archiveKey);
+        return [];
+      }
+    }
+
+    function writeAreas(areas) {
+      localStorage.setItem(archiveKey, JSON.stringify(areas));
+      renderAreas();
+    }
+
+    function currentConfig() {
+      return {
+        rest: readNumber(els.restMinutes, 10),
+        restLabel: els.restLabel.value.trim() || "Pause",
+        modes: readModes()
+      };
+    }
+
+    function applyConfig(config) {
+      if (!config) return;
+      if (config.rest) els.restMinutes.value = config.rest;
+      if (config.restLabel) els.restLabel.value = config.restLabel;
+      renderModes(Array.isArray(config.modes) && config.modes.length ? config.modes : defaultModes);
+      reset();
+    }
+
+    function renderAreas(selectedId = "") {
+      const areas = readAreas();
+      els.areaSelect.innerHTML = "";
+      if (!areas.length) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "Noch kein Bereich gespeichert";
+        els.areaSelect.appendChild(option);
+        return;
+      }
+
+      areas.forEach((area) => {
+        const option = document.createElement("option");
+        option.value = area.id;
+        option.textContent = area.name;
+        els.areaSelect.appendChild(option);
+      });
+
+      if (selectedId) {
+        els.areaSelect.value = selectedId;
+      }
+    }
+
+    function selectedArea() {
+      return readAreas().find((area) => area.id === els.areaSelect.value);
+    }
+
+    function fillAreaForm(area) {
+      els.areaName.value = area?.name || "";
+      els.areaDescription.value = area?.description || "";
+    }
+
+    function loadSettings() {
+      try {
+        const settings = JSON.parse(localStorage.getItem(storageKey) || "{}");
+        if (settings.active) els.activeMinutes.value = settings.active;
+        if (settings.rest) els.restMinutes.value = settings.rest;
+        if (settings.restLabel) els.restLabel.value = settings.restLabel;
+        renderModes(Array.isArray(settings.modes) && settings.modes.length ? settings.modes : defaultModes);
+      } catch {
+        localStorage.removeItem(storageKey);
+        renderModes(defaultModes);
+      }
+    }
+
+    function format(seconds) {
+      const safeSeconds = Math.max(0, Math.ceil(seconds));
+      const mins = Math.floor(safeSeconds / 60).toString().padStart(2, "0");
+      const secs = (safeSeconds % 60).toString().padStart(2, "0");
+      return `${mins}:${secs}`;
+    }
+
+    function beep() {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const context = new AudioContext();
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        oscillator.type = "sine";
+        oscillator.frequency.value = state.phase === "rest" ? 660 : 920;
+        oscillator.connect(gain);
+        gain.connect(context.destination);
+        gain.gain.setValueAtTime(0.0001, context.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.22, context.currentTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.32);
+        oscillator.start();
+        oscillator.stop(context.currentTime + 0.34);
+      } catch {
+        // Browser may block audio until user interaction. The timer itself still works.
+      }
+
+      if ("vibrate" in navigator) {
+        navigator.vibrate([180, 80, 180]);
+      }
+    }
+
+    function updateDisplay() {
+      const isRest = state.phase === "rest";
+      const label = isRest ? (els.restLabel.value.trim() || "Pause") : activeModeName();
+      els.phase.textContent = isRest ? `Pause - ${label}` : `Aktiv - ${label}`;
+      els.phase.classList.toggle("rest", isRest);
+      els.progress.classList.toggle("rest", isRest);
+      els.clock.textContent = format(state.remaining);
+      els.round.textContent = `Block ${state.currentRound} von ${maxRounds()}`;
+      els.rounds.value = maxRounds();
+      els.status.textContent = state.running ? "LAEUFT" : "BEREIT";
+      const done = state.phaseTotal > 0 ? 1 - (state.remaining / state.phaseTotal) : 0;
+      const percent = Math.min(100, Math.max(0, done * 100));
+      els.bar.style.width = `${percent}%`;
+      els.progress.setAttribute("aria-valuenow", Math.round(percent).toString());
+    }
+
+    function setPhase(phase) {
+      state.phase = phase;
+      state.phaseTotal = phase === "active" ? currentActiveSeconds() : restSeconds();
+      state.remaining = state.phaseTotal;
+      if (phase === "active") {
+        els.activeMinutes.value = Math.max(1, Math.round(state.phaseTotal / 60));
+      }
+      beep();
+      updateDisplay();
+    }
+
+    function finish() {
+      stop();
+      state.remaining = 0;
+      els.status.textContent = "FERTIG";
+      beep();
+      updateDisplay();
+    }
+
+    function nextPhase() {
+      if (state.phase === "active") {
+        setPhase("rest");
+        return;
+      }
+
+      if (state.currentRound >= maxRounds()) {
+        finish();
+        return;
+      }
+
+      state.currentRound += 1;
+      setPhase("active");
+    }
+
+    function tick() {
+      const now = Date.now();
+      const elapsed = state.lastTick ? (now - state.lastTick) / 1000 : 0;
+      state.lastTick = now;
+      state.remaining -= elapsed;
+
+      if (state.remaining <= 0) {
+        nextPhase();
+        state.lastTick = Date.now();
+      }
+
+      updateDisplay();
+    }
+
+    function start() {
+      if (state.running) return;
+      saveSettings();
+      state.running = true;
+      state.lastTick = Date.now();
+      state.timerId = window.setInterval(tick, 250);
+      beep();
+      updateDisplay();
+    }
+
+    function stop() {
+      state.running = false;
+      state.lastTick = null;
+      if (state.timerId) {
+        window.clearInterval(state.timerId);
+        state.timerId = null;
+      }
+      updateDisplay();
+    }
+
+    function reset() {
+      stop();
+      saveSettings();
+      state.phase = "active";
+      state.currentRound = 1;
+      state.phaseTotal = currentActiveSeconds();
+      state.remaining = state.phaseTotal;
+      els.activeMinutes.value = Math.max(1, Math.round(state.phaseTotal / 60));
+      updateDisplay();
+    }
+
+    els.start.addEventListener("click", start);
+    els.pause.addEventListener("click", stop);
+    els.skip.addEventListener("click", nextPhase);
+    els.reset.addEventListener("click", reset);
+
+    function seekProgress(clientX) {
+      const rect = els.progress.getBoundingClientRect();
+      const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+      state.remaining = Math.max(0.1, state.phaseTotal * (1 - ratio));
+      updateDisplay();
+    }
+
+    function seekFromEvent(event) {
+      const point = event.touches ? event.touches[0] : event;
+      if (!point) return;
+      seekProgress(point.clientX);
+    }
+
+    let seeking = false;
+    els.progress.addEventListener("pointerdown", (event) => {
+      seeking = true;
+      els.progress.setPointerCapture(event.pointerId);
+      seekFromEvent(event);
+    });
+    els.progress.addEventListener("pointermove", (event) => {
+      if (!seeking) return;
+      seekFromEvent(event);
+    });
+    els.progress.addEventListener("pointerup", (event) => {
+      seeking = false;
+      els.progress.releasePointerCapture(event.pointerId);
+      seekFromEvent(event);
+    });
+    els.progress.addEventListener("keydown", (event) => {
+      if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+      event.preventDefault();
+      const step = event.key === "ArrowRight" ? -30 : 30;
+      state.remaining = Math.min(state.phaseTotal, Math.max(0.1, state.remaining + step));
+      updateDisplay();
+    });
+
+    [els.restMinutes, els.restLabel].forEach((input) => {
+      input.addEventListener("change", reset);
+    });
+
+    els.activeMinutes.addEventListener("change", () => {
+      const total = readNumber(els.activeMinutes, 20);
+      const modes = readModes();
+      if (modes.length === 0) {
+        renderModes([{ name: "Normal", minutes: total }]);
+      } else {
+        const first = modes[0];
+        renderModes([{ name: first.name || "Normal", minutes: total }, ...modes.slice(1)]);
+      }
+      reset();
+    });
+
+    els.addMode.addEventListener("click", () => {
+      addModeRow("Normal", 5);
+      reset();
+    });
+
+    els.resetModes.addEventListener("click", () => {
+      renderModes(defaultModes);
+      reset();
+    });
+
+    els.areaSelect.addEventListener("change", () => {
+      fillAreaForm(selectedArea());
+    });
+
+    els.saveArea.addEventListener("click", () => {
+      const name = els.areaName.value.trim();
+      if (!name) {
+        els.areaName.focus();
+        return;
+      }
+
+      const areas = readAreas();
+      const existing = selectedArea();
+      const id = existing?.id || `area-${Date.now()}`;
+      const nextArea = {
+        id,
+        name,
+        description: els.areaDescription.value.trim(),
+        config: currentConfig(),
+        savedAt: new Date().toISOString()
+      };
+      const nextAreas = existing
+        ? areas.map((area) => area.id === id ? nextArea : area)
+        : [...areas, nextArea];
+      writeAreas(nextAreas);
+      els.areaSelect.value = id;
+    });
+
+    els.loadArea.addEventListener("click", () => {
+      const area = selectedArea();
+      if (!area) return;
+      fillAreaForm(area);
+      applyConfig(area.config);
+    });
+
+    els.deleteArea.addEventListener("click", () => {
+      const area = selectedArea();
+      if (!area) return;
+      writeAreas(readAreas().filter((entry) => entry.id !== area.id));
+      fillAreaForm(null);
+    });
+
+    function updateBridgeAvailable() {
+      return typeof window.AstraUpdater !== "undefined";
+    }
+
+    function setUpdateStatus(message) {
+      els.updateStatus.textContent = message;
+    }
+
+    function loadUpdateSettings() {
+      const savedUrl = localStorage.getItem(updateUrlKey) || "";
+      els.updateManifestUrl.value = savedUrl;
+
+      if (updateBridgeAvailable()) {
+        const name = window.AstraUpdater.currentVersionName();
+        const code = window.AstraUpdater.currentVersionCode();
+        els.appVersion.textContent = `Installiert: ${name} (${code})`;
+        setUpdateStatus(savedUrl
+          ? "Update-Quelle bereit. Die App prueft nur, wenn du es ausloest."
+          : "Noch keine Update-Quelle gespeichert.");
+      } else {
+        els.appVersion.textContent = "Browser-Vorschau";
+        setUpdateStatus("Updater ist nur in der installierten Android-App aktiv.");
+      }
+    }
+
+    els.saveUpdateUrl.addEventListener("click", () => {
+      const url = els.updateManifestUrl.value.trim();
+      if (!url) {
+        setUpdateStatus("Bitte zuerst die Update-Quelle eintragen.");
+        return;
+      }
+      localStorage.setItem(updateUrlKey, url);
+      setUpdateStatus("Update-Quelle gespeichert.");
+    });
+
+    els.clearUpdate.addEventListener("click", () => {
+      localStorage.removeItem(updateUrlKey);
+      els.updateManifestUrl.value = "";
+      state.pendingUpdateApk = "";
+      els.installUpdate.disabled = true;
+      setUpdateStatus("Update-Quelle geloescht.");
+    });
+
+    els.checkUpdate.addEventListener("click", () => {
+      const url = els.updateManifestUrl.value.trim();
+      if (!updateBridgeAvailable()) {
+        setUpdateStatus("Updater ist nur in der installierten Android-App aktiv.");
+        return;
+      }
+      if (!url) {
+        setUpdateStatus("Bitte zuerst die Update-Quelle eintragen.");
+        return;
+      }
+
+      localStorage.setItem(updateUrlKey, url);
+      state.pendingUpdateApk = "";
+      els.installUpdate.disabled = true;
+      setUpdateStatus("Update wird geprueft...");
+      window.AstraUpdater.checkUpdate(url);
+    });
+
+    els.installUpdate.addEventListener("click", () => {
+      if (!state.pendingUpdateApk || !updateBridgeAvailable()) return;
+      setUpdateStatus("Update wird geladen. Danach oeffnet Android die Installation.");
+      window.AstraUpdater.installUpdate(state.pendingUpdateApk);
+    });
+
+    window.astraUpdateResult = function(result) {
+      if (!result || !result.ok) {
+        setUpdateStatus(`Update-Pruefung fehlgeschlagen:\n${result?.error || "Unbekannter Fehler"}`);
+        return;
+      }
+
+      const currentCode = Number(result.currentVersionCode || 0);
+      const nextCode = Number(result.versionCode || 0);
+      const notes = result.notes ? `\n\nAenderungen:\n${result.notes}` : "";
+
+      if (!result.apkUrl) {
+        setUpdateStatus("Update-Datei gefunden, aber apkUrl fehlt im Manifest.");
+        return;
+      }
+
+      if (nextCode > currentCode) {
+        state.pendingUpdateApk = result.apkUrl;
+        els.installUpdate.disabled = false;
+        setUpdateStatus(`Neue Version verfuegbar: ${result.versionName} (${nextCode})\nInstalliert: ${result.currentVersionName} (${currentCode})${notes}`);
+        return;
+      }
+
+      state.pendingUpdateApk = "";
+      els.installUpdate.disabled = true;
+      setUpdateStatus(`Astra Pulse ist aktuell.\nInstalliert: ${result.currentVersionName} (${currentCode})${notes}`);
+    };
+
+    window.astraUpdateInstallResult = function(result) {
+      if (!result || result.ok) return;
+      setUpdateStatus(`Update konnte nicht installiert werden:\n${result.error || "Unbekannter Fehler"}`);
+    };
+
+    document.querySelectorAll("[data-preset]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const [active, rest, rounds] = button.dataset.preset.split(",");
+        renderModes([
+          { name: "Normal", minutes: Number(active) || 20 },
+          { name: "Speed", minutes: Number(active) || 20 },
+          { name: "Edge", minutes: Number(active) || 20 }
+        ]);
+        els.restMinutes.value = rest;
+        reset();
+      });
+    });
+
+    window.addEventListener("beforeinstallprompt", (event) => {
+      event.preventDefault();
+      state.installPrompt = event;
+      els.installBox.classList.add("show");
+    });
+
+    els.installButton.addEventListener("click", async () => {
+      if (!state.installPrompt) return;
+      state.installPrompt.prompt();
+      await state.installPrompt.userChoice;
+      state.installPrompt = null;
+      els.installBox.classList.remove("show");
+    });
+
+    if ("serviceWorker" in navigator && location.protocol !== "file:") {
+      navigator.serviceWorker.register("service-worker.js").catch(() => {});
+    }
+
+    renderModes(defaultModes);
+    loadSettings();
+    renderAreas();
+    loadUpdateSettings();
+    reset();
+  </script>
+</body>
+</html>
