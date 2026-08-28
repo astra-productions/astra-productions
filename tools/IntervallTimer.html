@@ -368,7 +368,7 @@
 
     .mode-row {
       display: grid;
-      grid-template-columns: 1fr 86px 44px;
+      grid-template-columns: minmax(120px, 1fr) 68px 68px 44px;
       gap: 8px;
       padding: 8px;
       border: 1px solid rgba(255, 255, 255, 0.06);
@@ -970,7 +970,7 @@
           <div class="logo" aria-hidden="true"><span>A</span></div>
           <div>
             <h1>Astra Pulse</h1>
-            <div class="subtitle">Version 1.4 · Lokal. Werbefrei. Offline bereit.</div>
+            <div class="subtitle">Version 1.5 · Lokal. Werbefrei. Offline bereit.</div>
           </div>
         </div>
         <div class="pill" id="status">BEREIT</div>
@@ -1017,9 +1017,9 @@
         </div>
       </div>
       <div class="timer-footer">
-        <span><b>10:00</b><small>Pause</small></span>
+        <span><b id="restFooterTime">10:00</b><small>Pause</small></span>
         <button class="play-glyph" id="timerPlay" type="button" aria-label="Timer starten">▶</button>
-        <span><b>20:00</b><small id="activeFooterLabel">Arbeit</small></span>
+        <span><b id="activeFooterTime">20:00</b><small id="activeFooterLabel">Arbeit</small></span>
       </div>
       <div class="progress" id="progress" role="slider" aria-label="Fortschritt der aktuellen Phase" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0"><div class="bar" id="bar"></div></div>
     </section>
@@ -1039,25 +1039,31 @@
       </div>
     <section class="settings card">
       <div class="setting-grid">
-        <label>Standard Aktiv
-          <input id="activeMinutes" type="number" inputmode="numeric" min="1" max="60" value="20">
+        <label>Aktiv (Min.)
+          <input id="activeMinutes" type="number" inputmode="numeric" min="0" max="60" value="20">
         </label>
-        <label>Pause
-          <input id="restMinutes" type="number" inputmode="numeric" min="1" max="60" value="10">
+        <label>Aktiv (Sek.)
+          <input id="activeSeconds" type="number" inputmode="numeric" min="0" max="59" value="0">
+        </label>
+        <label>Pause (Min.)
+          <input id="restMinutes" type="number" inputmode="numeric" min="0" max="60" value="10">
+        </label>
+        <label>Pause (Sek.)
+          <input id="restSecondsInput" type="number" inputmode="numeric" min="0" max="59" value="0">
         </label>
         <label>Runden
           <input id="rounds" type="number" inputmode="numeric" min="1" max="12" value="4" disabled>
         </label>
       </div>
       <div class="status-grid">
-        <label>Aktiv-Bezeichnung
-          <input id="activeLabel" type="text" maxlength="28" value="Arbeit" placeholder="z.B. Lernen, Fokus, Training">
+        <label>Text rechts (Aktiv)
+          <input id="activeLabel" type="text" maxlength="28" value="Arbeit" placeholder="z.B. Stroke, Push, Lernen">
         </label>
-        <label>Pause-Status
-          <input id="restLabel" type="text" maxlength="28" value="Pause" list="statusSuggestions">
+        <label>Text links (Pause)
+          <input id="restLabel" type="text" maxlength="28" value="Pause" placeholder="z.B. Pause, Ruhe, Stopp" list="statusSuggestions">
         </label>
         <label>Ablauf
-          <input id="modeHint" type="text" value="Status + Minuten" disabled>
+          <input id="modeHint" type="text" value="Status + Min. + Sek." disabled>
         </label>
       </div>
       <div class="status-grid">
@@ -1167,6 +1173,8 @@
       clock: document.getElementById("clock"),
       dialLabel: document.getElementById("dialLabel"),
       activeFooterLabel: document.getElementById("activeFooterLabel"),
+      activeFooterTime: document.getElementById("activeFooterTime"),
+      restFooterTime: document.getElementById("restFooterTime"),
       round: document.getElementById("round"),
       progress: document.getElementById("progress"),
       bar: document.getElementById("bar"),
@@ -1181,7 +1189,9 @@
       closeMenu: document.getElementById("closeMenu"),
       menuBackdrop: document.getElementById("menuBackdrop"),
       activeMinutes: document.getElementById("activeMinutes"),
+      activeSeconds: document.getElementById("activeSeconds"),
       restMinutes: document.getElementById("restMinutes"),
+      restSecondsInput: document.getElementById("restSecondsInput"),
       rounds: document.getElementById("rounds"),
       activeLabel: document.getElementById("activeLabel"),
       restLabel: document.getElementById("restLabel"),
@@ -1210,10 +1220,10 @@
     };
 
     const defaultModes = [
-      { name: "Normal", minutes: 20 },
-      { name: "Speed", minutes: 20 },
-      { name: "Slow", minutes: 20 },
-      { name: "Edge", minutes: 20 }
+      { name: "Normal", minutes: 20, seconds: 0 },
+      { name: "Speed", minutes: 20, seconds: 0 },
+      { name: "Slow", minutes: 20, seconds: 0 },
+      { name: "Edge", minutes: 20, seconds: 0 }
     ];
 
     function readNumber(input, fallback) {
@@ -1221,7 +1231,9 @@
       return Number.isFinite(value) ? Math.max(Number(input.min || 1), Math.min(Number(input.max || 999), value)) : fallback;
     }
 
-    function restSeconds() { return readNumber(els.restMinutes, 10) * 60; }
+    function restSeconds() {
+      return Math.max(1, readNumber(els.restMinutes, 10) * 60 + readNumber(els.restSecondsInput, 0));
+    }
     function maxRounds() { return readModes().length; }
     function activeLabel() { return els.activeLabel.value.trim() || "Arbeit"; }
 
@@ -1230,9 +1242,11 @@
       const modes = rows.map((row) => {
         const name = row.querySelector("[data-mode-name]").value.trim();
         const minutes = Number.parseInt(row.querySelector("[data-mode-minutes]").value, 10);
+        const seconds = Number.parseInt(row.querySelector("[data-mode-seconds]").value, 10);
         return {
           name: name || "Status",
-          minutes: Number.isFinite(minutes) ? Math.max(1, Math.min(60, minutes)) : 1
+          minutes: Number.isFinite(minutes) ? Math.max(0, Math.min(60, minutes)) : 0,
+          seconds: Number.isFinite(seconds) ? Math.max(0, Math.min(59, seconds)) : 0
         };
       });
       return modes.length ? modes : defaultModes;
@@ -1249,21 +1263,23 @@
     }
 
     function currentActiveSeconds() {
-      return Math.max(1, currentMode().minutes || 1) * 60;
+      const mode = currentMode();
+      return Math.max(1, (Number(mode.minutes) || 0) * 60 + (Number(mode.seconds) || 0));
     }
 
     function renderModes(modes = defaultModes) {
       els.modeList.innerHTML = "";
-      modes.forEach((mode) => addModeRow(mode.name, mode.minutes));
+      modes.forEach((mode) => addModeRow(mode.name, mode.minutes, mode.seconds || 0));
       els.rounds.value = readModes().length;
     }
 
-    function addModeRow(name = "Normal", minutes = 5) {
+    function addModeRow(name = "Normal", minutes = 5, seconds = 0) {
       const row = document.createElement("div");
       row.className = "mode-row";
       row.innerHTML = `
         <input data-mode-name type="text" maxlength="24" list="statusSuggestions" value="${escapeHtml(name)}" aria-label="Statusname">
-        <input data-mode-minutes type="number" inputmode="numeric" min="1" max="60" value="${Number(minutes) || 5}" aria-label="Status Minuten">
+        <input data-mode-minutes type="number" inputmode="numeric" min="0" max="60" value="${Number(minutes) || 0}" aria-label="Status Minuten" title="Minuten">
+        <input data-mode-seconds type="number" inputmode="numeric" min="0" max="59" value="${Number(seconds) || 0}" aria-label="Status Sekunden" title="Sekunden">
         <button class="small-danger" type="button" aria-label="Status entfernen">X</button>
       `;
       row.querySelectorAll("input").forEach((input) => {
@@ -1271,7 +1287,7 @@
       });
       row.querySelector("button").addEventListener("click", () => {
         if (els.modeList.querySelectorAll(".mode-row").length <= 1) {
-          renderModes([{ name: "Normal", minutes: 20 }]);
+          renderModes([{ name: "Normal", minutes: 20, seconds: 0 }]);
         } else {
           row.remove();
         }
@@ -1292,7 +1308,9 @@
     function saveSettings() {
       const settings = {
         active: readNumber(els.activeMinutes, 20),
+        activeSeconds: readNumber(els.activeSeconds, 0),
         rest: readNumber(els.restMinutes, 10),
+        restSeconds: readNumber(els.restSecondsInput, 0),
         activeLabel: activeLabel(),
         restLabel: els.restLabel.value.trim() || "Pause",
         metronomeEnabled: els.metronomeEnabled.value === "true",
@@ -1322,6 +1340,7 @@
     function currentConfig() {
       return {
         rest: readNumber(els.restMinutes, 10),
+        restSeconds: readNumber(els.restSecondsInput, 0),
         activeLabel: activeLabel(),
         restLabel: els.restLabel.value.trim() || "Pause",
         metronomeEnabled: els.metronomeEnabled.value === "true",
@@ -1334,7 +1353,8 @@
 
     function applyConfig(config) {
       if (!config) return;
-      if (config.rest) els.restMinutes.value = config.rest;
+      if (Number.isFinite(Number(config.rest))) els.restMinutes.value = config.rest;
+      if (Number.isFinite(Number(config.restSeconds))) els.restSecondsInput.value = config.restSeconds;
       if (config.activeLabel) els.activeLabel.value = config.activeLabel;
       if (config.restLabel) els.restLabel.value = config.restLabel;
       if (typeof config.metronomeEnabled === "boolean") els.metronomeEnabled.value = String(config.metronomeEnabled);
@@ -1380,8 +1400,10 @@
     function loadSettings() {
       try {
         const settings = JSON.parse(localStorage.getItem(storageKey) || "{}");
-        if (settings.active) els.activeMinutes.value = settings.active;
-        if (settings.rest) els.restMinutes.value = settings.rest;
+        if (Number.isFinite(Number(settings.active))) els.activeMinutes.value = settings.active;
+        if (Number.isFinite(Number(settings.activeSeconds))) els.activeSeconds.value = settings.activeSeconds;
+        if (Number.isFinite(Number(settings.rest))) els.restMinutes.value = settings.rest;
+        if (Number.isFinite(Number(settings.restSeconds))) els.restSecondsInput.value = settings.restSeconds;
         if (settings.activeLabel) els.activeLabel.value = settings.activeLabel;
         if (settings.restLabel) els.restLabel.value = settings.restLabel;
         if (typeof settings.metronomeEnabled === "boolean") els.metronomeEnabled.value = String(settings.metronomeEnabled);
@@ -1447,12 +1469,28 @@
       state.metronomeId = null;
     }
 
+    function suggestedBpmForName(name) {
+      const keyword = String(name || "").trim().toLowerCase().replace(/[_-]+/g, " ");
+      if (/extra\s*(fast|schnell)/.test(keyword)) return 150;
+      if (/speed|speen/.test(keyword)) return 180;
+      if (/fast|schnell/.test(keyword)) return 110;
+      if (/slow|langsam/.test(keyword)) return 50;
+      if (/normal/.test(keyword)) return 70;
+      return null;
+    }
+
+    function currentMetronomeBpm() {
+      return suggestedBpmForName(activeModeName()) || readNumber(els.metronomeBpm, 60);
+    }
+
     function syncMetronome() {
       stopMetronome();
       if (!state.running || state.phase !== "active" || els.metronomeEnabled.value !== "true") return;
+      const bpm = currentMetronomeBpm();
+      if (suggestedBpmForName(activeModeName())) els.metronomeBpm.value = bpm;
       const beat = () => tone(1200, 0.045, 0.1);
       beat();
-      state.metronomeId = window.setInterval(beat, 60000 / readNumber(els.metronomeBpm, 60));
+      state.metronomeId = window.setInterval(beat, 60000 / bpm);
     }
 
     function updateDisplay() {
@@ -1464,9 +1502,13 @@
       els.clock.textContent = format(state.remaining);
       els.dialLabel.textContent = isRest ? (els.restLabel.value.trim() || "Pause") : activeLabel();
       els.activeFooterLabel.textContent = activeLabel();
+      els.activeFooterTime.textContent = format(currentActiveSeconds());
+      els.restFooterTime.textContent = format(restSeconds());
       els.round.textContent = `Block ${state.currentRound} von ${maxRounds()}`;
       els.rounds.value = maxRounds();
       els.status.textContent = state.running ? "LAEUFT" : "BEREIT";
+      const suggestedBpm = !isRest ? suggestedBpmForName(activeModeName()) : null;
+      if (suggestedBpm) els.metronomeBpm.value = suggestedBpm;
       els.timerPlay.textContent = state.running ? "Ⅱ" : "▶";
       els.timerPlay.setAttribute("aria-label", state.running ? "Timer pausieren" : "Timer starten");
       const done = state.phaseTotal > 0 ? 1 - (state.remaining / state.phaseTotal) : 0;
@@ -1480,7 +1522,8 @@
       state.phaseTotal = phase === "active" ? currentActiveSeconds() : restSeconds();
       state.remaining = state.phaseTotal;
       if (phase === "active") {
-        els.activeMinutes.value = Math.max(1, Math.round(state.phaseTotal / 60));
+        els.activeMinutes.value = Math.floor(state.phaseTotal / 60);
+        els.activeSeconds.value = Math.round(state.phaseTotal % 60);
       }
       syncMetronome();
       updateDisplay();
@@ -1552,7 +1595,8 @@
       state.currentRound = 1;
       state.phaseTotal = currentActiveSeconds();
       state.remaining = state.phaseTotal;
-      els.activeMinutes.value = Math.max(1, Math.round(state.phaseTotal / 60));
+      els.activeMinutes.value = Math.floor(state.phaseTotal / 60);
+      els.activeSeconds.value = Math.round(state.phaseTotal % 60);
       updateDisplay();
     }
 
@@ -1616,24 +1660,28 @@
       updateDisplay();
     });
 
-    [els.restMinutes, els.activeLabel, els.restLabel, els.metronomeEnabled, els.metronomeBpm, els.alarmEnabled, els.alarmVolume].forEach((input) => {
+    [els.restMinutes, els.restSecondsInput, els.activeLabel, els.restLabel, els.metronomeEnabled, els.metronomeBpm, els.alarmEnabled, els.alarmVolume].forEach((input) => {
       input.addEventListener("change", reset);
     });
 
-    els.activeMinutes.addEventListener("change", () => {
-      const total = readNumber(els.activeMinutes, 20);
+    function applyStandardActiveTime() {
+      const minutes = readNumber(els.activeMinutes, 20);
+      const seconds = readNumber(els.activeSeconds, 0);
       const modes = readModes();
       if (modes.length === 0) {
-        renderModes([{ name: "Normal", minutes: total }]);
+        renderModes([{ name: "Normal", minutes, seconds }]);
       } else {
         const first = modes[0];
-        renderModes([{ name: first.name || "Normal", minutes: total }, ...modes.slice(1)]);
+        renderModes([{ name: first.name || "Normal", minutes, seconds }, ...modes.slice(1)]);
       }
       reset();
-    });
+    }
+
+    els.activeMinutes.addEventListener("change", applyStandardActiveTime);
+    els.activeSeconds.addEventListener("change", applyStandardActiveTime);
 
     els.addMode.addEventListener("click", () => {
-      addModeRow("Normal", 5);
+      addModeRow("Normal", 5, 0);
       reset();
     });
 
@@ -1787,11 +1835,12 @@
       button.addEventListener("click", () => {
         const [active, rest, rounds] = button.dataset.preset.split(",");
         renderModes([
-          { name: "Normal", minutes: Number(active) || 20 },
-          { name: "Speed", minutes: Number(active) || 20 },
-          { name: "Edge", minutes: Number(active) || 20 }
+          { name: "Normal", minutes: Number(active) || 20, seconds: 0 },
+          { name: "Speed", minutes: Number(active) || 20, seconds: 0 },
+          { name: "Edge", minutes: Number(active) || 20, seconds: 0 }
         ]);
         els.restMinutes.value = rest;
+        els.restSecondsInput.value = 0;
         reset();
       });
     });
