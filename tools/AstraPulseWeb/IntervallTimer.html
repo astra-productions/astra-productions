@@ -851,7 +851,7 @@
           <div class="logo" aria-hidden="true"><span>A</span></div>
           <div>
             <h1>Astra Pulse</h1>
-            <div class="subtitle">Version 1.2 · Lokal. Werbefrei. Offline bereit.</div>
+            <div class="subtitle">Version 1.3 · Lokal. Werbefrei. Offline bereit.</div>
           </div>
         </div>
         <div class="pill" id="status">BEREIT</div>
@@ -894,13 +894,13 @@
         <div class="orbit orbit-b" aria-hidden="true"></div>
         <div class="dial">
           <div class="clock" id="clock">20:00</div>
-          <div class="dial-label">Arbeit</div>
+          <div class="dial-label" id="dialLabel">Arbeit</div>
         </div>
       </div>
       <div class="timer-footer">
         <span><b>10:00</b><small>Pause</small></span>
         <span class="play-glyph" aria-hidden="true">▶</span>
-        <span><b>20:00</b><small>Arbeit</small></span>
+        <span><b>20:00</b><small id="activeFooterLabel">Arbeit</small></span>
       </div>
       <div class="progress" id="progress" role="slider" aria-label="Fortschritt der aktuellen Phase" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0"><div class="bar" id="bar"></div></div>
     </section>
@@ -925,11 +925,34 @@
         </label>
       </div>
       <div class="status-grid">
+        <label>Aktiv-Bezeichnung
+          <input id="activeLabel" type="text" maxlength="28" value="Arbeit" placeholder="z.B. Lernen, Fokus, Training">
+        </label>
         <label>Pause-Status
           <input id="restLabel" type="text" maxlength="28" value="Pause" list="statusSuggestions">
         </label>
         <label>Ablauf
           <input id="modeHint" type="text" value="Status + Minuten" disabled>
+        </label>
+      </div>
+      <div class="status-grid">
+        <label>Metronom
+          <select id="metronomeEnabled">
+            <option value="false">Aus</option>
+            <option value="true">Während Aktivphase</option>
+          </select>
+        </label>
+        <label>Tempo (BPM)
+          <input id="metronomeBpm" type="number" inputmode="numeric" min="30" max="240" value="60">
+        </label>
+        <label>Ablaufalarm
+          <select id="alarmEnabled">
+            <option value="true">An</option>
+            <option value="false">Aus</option>
+          </select>
+        </label>
+        <label>Alarm-Lautstärke
+          <input id="alarmVolume" type="range" min="0" max="100" value="70">
         </label>
       </div>
       <div class="mode-list" id="modeList"></div>
@@ -1007,13 +1030,17 @@
       timerId: null,
       lastTick: null,
       installPrompt: null,
-      pendingUpdateApk: ""
+      pendingUpdateApk: "",
+      audioContext: null,
+      metronomeId: null
     };
 
     const els = {
       status: document.getElementById("status"),
       phase: document.getElementById("phase"),
       clock: document.getElementById("clock"),
+      dialLabel: document.getElementById("dialLabel"),
+      activeFooterLabel: document.getElementById("activeFooterLabel"),
       round: document.getElementById("round"),
       progress: document.getElementById("progress"),
       bar: document.getElementById("bar"),
@@ -1024,7 +1051,12 @@
       activeMinutes: document.getElementById("activeMinutes"),
       restMinutes: document.getElementById("restMinutes"),
       rounds: document.getElementById("rounds"),
+      activeLabel: document.getElementById("activeLabel"),
       restLabel: document.getElementById("restLabel"),
+      metronomeEnabled: document.getElementById("metronomeEnabled"),
+      metronomeBpm: document.getElementById("metronomeBpm"),
+      alarmEnabled: document.getElementById("alarmEnabled"),
+      alarmVolume: document.getElementById("alarmVolume"),
       modeList: document.getElementById("modeList"),
       addMode: document.getElementById("addMode"),
       resetModes: document.getElementById("resetModes"),
@@ -1059,6 +1091,7 @@
 
     function restSeconds() { return readNumber(els.restMinutes, 10) * 60; }
     function maxRounds() { return readModes().length; }
+    function activeLabel() { return els.activeLabel.value.trim() || "Arbeit"; }
 
     function readModes() {
       const rows = [...els.modeList.querySelectorAll(".mode-row")];
@@ -1128,7 +1161,12 @@
       const settings = {
         active: readNumber(els.activeMinutes, 20),
         rest: readNumber(els.restMinutes, 10),
+        activeLabel: activeLabel(),
         restLabel: els.restLabel.value.trim() || "Pause",
+        metronomeEnabled: els.metronomeEnabled.value === "true",
+        metronomeBpm: readNumber(els.metronomeBpm, 60),
+        alarmEnabled: els.alarmEnabled.value === "true",
+        alarmVolume: readNumber(els.alarmVolume, 70),
         modes: readModes()
       };
       localStorage.setItem(storageKey, JSON.stringify(settings));
@@ -1152,7 +1190,12 @@
     function currentConfig() {
       return {
         rest: readNumber(els.restMinutes, 10),
+        activeLabel: activeLabel(),
         restLabel: els.restLabel.value.trim() || "Pause",
+        metronomeEnabled: els.metronomeEnabled.value === "true",
+        metronomeBpm: readNumber(els.metronomeBpm, 60),
+        alarmEnabled: els.alarmEnabled.value === "true",
+        alarmVolume: readNumber(els.alarmVolume, 70),
         modes: readModes()
       };
     }
@@ -1160,7 +1203,12 @@
     function applyConfig(config) {
       if (!config) return;
       if (config.rest) els.restMinutes.value = config.rest;
+      if (config.activeLabel) els.activeLabel.value = config.activeLabel;
       if (config.restLabel) els.restLabel.value = config.restLabel;
+      if (typeof config.metronomeEnabled === "boolean") els.metronomeEnabled.value = String(config.metronomeEnabled);
+      if (config.metronomeBpm) els.metronomeBpm.value = config.metronomeBpm;
+      if (typeof config.alarmEnabled === "boolean") els.alarmEnabled.value = String(config.alarmEnabled);
+      if (Number.isFinite(Number(config.alarmVolume))) els.alarmVolume.value = config.alarmVolume;
       renderModes(Array.isArray(config.modes) && config.modes.length ? config.modes : defaultModes);
       reset();
     }
@@ -1202,7 +1250,12 @@
         const settings = JSON.parse(localStorage.getItem(storageKey) || "{}");
         if (settings.active) els.activeMinutes.value = settings.active;
         if (settings.rest) els.restMinutes.value = settings.rest;
+        if (settings.activeLabel) els.activeLabel.value = settings.activeLabel;
         if (settings.restLabel) els.restLabel.value = settings.restLabel;
+        if (typeof settings.metronomeEnabled === "boolean") els.metronomeEnabled.value = String(settings.metronomeEnabled);
+        if (settings.metronomeBpm) els.metronomeBpm.value = settings.metronomeBpm;
+        if (typeof settings.alarmEnabled === "boolean") els.alarmEnabled.value = String(settings.alarmEnabled);
+        if (Number.isFinite(Number(settings.alarmVolume))) els.alarmVolume.value = settings.alarmVolume;
         renderModes(Array.isArray(settings.modes) && settings.modes.length ? settings.modes : defaultModes);
       } catch {
         localStorage.removeItem(storageKey);
@@ -1217,28 +1270,57 @@
       return `${mins}:${secs}`;
     }
 
-    function beep() {
-      try {
+    function audioContext() {
+      if (!state.audioContext) {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const context = new AudioContext();
+        state.audioContext = new AudioContext();
+      }
+      if (state.audioContext.state === "suspended") state.audioContext.resume();
+      return state.audioContext;
+    }
+
+    function tone(frequency, duration = 0.06, volume = 0.12, delay = 0) {
+      try {
+        const context = audioContext();
         const oscillator = context.createOscillator();
         const gain = context.createGain();
+        const startAt = context.currentTime + delay;
         oscillator.type = "sine";
-        oscillator.frequency.value = state.phase === "rest" ? 660 : 920;
+        oscillator.frequency.value = frequency;
         oscillator.connect(gain);
         gain.connect(context.destination);
-        gain.gain.setValueAtTime(0.0001, context.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.22, context.currentTime + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.32);
-        oscillator.start();
-        oscillator.stop(context.currentTime + 0.34);
+        gain.gain.setValueAtTime(0.0001, startAt);
+        gain.gain.exponentialRampToValueAtTime(Math.max(0.001, volume), startAt + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
+        oscillator.start(startAt);
+        oscillator.stop(startAt + duration + 0.02);
       } catch {
-        // Browser may block audio until user interaction. The timer itself still works.
+        // Audio can be blocked until the first user interaction.
       }
+    }
 
+    function alarm() {
+      if (els.alarmEnabled.value !== "true") return;
+      const volume = readNumber(els.alarmVolume, 70) / 100 * 0.32;
+      tone(880, 0.2, volume, 0);
+      tone(1100, 0.2, volume, 0.24);
+      tone(1320, 0.38, volume, 0.48);
       if ("vibrate" in navigator) {
         navigator.vibrate([180, 80, 180]);
       }
+    }
+
+    function stopMetronome() {
+      if (state.metronomeId) window.clearInterval(state.metronomeId);
+      state.metronomeId = null;
+    }
+
+    function syncMetronome() {
+      stopMetronome();
+      if (!state.running || state.phase !== "active" || els.metronomeEnabled.value !== "true") return;
+      const beat = () => tone(1200, 0.045, 0.1);
+      beat();
+      state.metronomeId = window.setInterval(beat, 60000 / readNumber(els.metronomeBpm, 60));
     }
 
     function updateDisplay() {
@@ -1248,6 +1330,8 @@
       els.phase.classList.toggle("rest", isRest);
       els.progress.classList.toggle("rest", isRest);
       els.clock.textContent = format(state.remaining);
+      els.dialLabel.textContent = isRest ? (els.restLabel.value.trim() || "Pause") : activeLabel();
+      els.activeFooterLabel.textContent = activeLabel();
       els.round.textContent = `Block ${state.currentRound} von ${maxRounds()}`;
       els.rounds.value = maxRounds();
       els.status.textContent = state.running ? "LAEUFT" : "BEREIT";
@@ -1264,7 +1348,7 @@
       if (phase === "active") {
         els.activeMinutes.value = Math.max(1, Math.round(state.phaseTotal / 60));
       }
-      beep();
+      syncMetronome();
       updateDisplay();
     }
 
@@ -1272,7 +1356,6 @@
       stop();
       state.remaining = 0;
       els.status.textContent = "FERTIG";
-      beep();
       updateDisplay();
     }
 
@@ -1298,6 +1381,7 @@
       state.remaining -= elapsed;
 
       if (state.remaining <= 0) {
+        alarm();
         nextPhase();
         state.lastTick = Date.now();
       }
@@ -1307,11 +1391,12 @@
 
     function start() {
       if (state.running) return;
+      try { audioContext(); } catch { /* Timer remains usable without audio. */ }
       saveSettings();
       state.running = true;
       state.lastTick = Date.now();
       state.timerId = window.setInterval(tick, 250);
-      beep();
+      syncMetronome();
       updateDisplay();
     }
 
@@ -1322,6 +1407,7 @@
         window.clearInterval(state.timerId);
         state.timerId = null;
       }
+      stopMetronome();
       updateDisplay();
     }
 
@@ -1377,7 +1463,7 @@
       updateDisplay();
     });
 
-    [els.restMinutes, els.restLabel].forEach((input) => {
+    [els.restMinutes, els.activeLabel, els.restLabel, els.metronomeEnabled, els.metronomeBpm, els.alarmEnabled, els.alarmVolume].forEach((input) => {
       input.addEventListener("change", reset);
     });
 
