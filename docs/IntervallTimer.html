@@ -69,6 +69,12 @@
       align-content: start;
     }
 
+    .app > .poster-hero,
+    .app > .install,
+    .app > .notice:not(.update-status) {
+      display: none;
+    }
+
     .topbar {
       display: flex;
       justify-content: space-between;
@@ -633,6 +639,7 @@
       width: min(390px, 100%);
       min-height: 640px;
       padding: 28px 24px 24px;
+      gap: 8px;
       border-radius: 42px;
       overflow: hidden;
       background:
@@ -661,6 +668,27 @@
       letter-spacing: 0.18em;
       font-size: 0.86rem;
       text-align: center;
+    }
+
+    .phone-action {
+      appearance: none;
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      background: transparent;
+      color: rgba(255, 255, 255, 0.82);
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .phone-action:focus-visible {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+      outline: 1px solid rgba(255, 103, 202, 0.5);
     }
 
     .pulse-line {
@@ -807,6 +835,7 @@
     }
 
     .play-glyph {
+      appearance: none;
       display: grid;
       place-items: center;
       width: 74px;
@@ -816,6 +845,17 @@
       background: radial-gradient(circle, rgba(255, 116, 221, 0.34), rgba(120, 75, 255, 0.16));
       border: 2px solid rgba(255, 112, 219, 0.52);
       box-shadow: 0 0 28px rgba(255, 90, 214, 0.4), inset 0 0 18px rgba(255, 255, 255, 0.08);
+      padding: 0;
+      font: inherit;
+      cursor: pointer;
+      transition: transform 160ms ease, box-shadow 160ms ease;
+    }
+
+    .play-glyph:active { transform: scale(0.94); }
+
+    .play-glyph:focus-visible {
+      outline: 2px solid #72e7ff;
+      outline-offset: 4px;
     }
 
     .timer-card .progress {
@@ -827,17 +867,96 @@
     }
 
     .controls {
-      width: min(610px, 100%);
-      justify-self: center;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      display: none;
     }
 
+    .app > .poster-hero,
+    .app > .install,
+    .app > .notice:not(.update-status) {
+      display: none !important;
+    }
+
+    .menu-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 90;
+      border: 0;
+      background: rgba(3, 1, 7, 0.72);
+      backdrop-filter: blur(5px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 220ms ease;
+    }
+
+    .app-menu {
+      position: fixed;
+      z-index: 100;
+      top: 0;
+      left: 0;
+      width: min(640px, 94vw);
+      height: 100dvh;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding: max(18px, env(safe-area-inset-top)) 14px max(24px, env(safe-area-inset-bottom));
+      background: linear-gradient(180deg, #160719 0%, #08050d 100%);
+      border-right: 1px solid rgba(255, 103, 202, 0.36);
+      box-shadow: 24px 0 60px rgba(0, 0, 0, 0.64);
+      transform: translateX(-104%);
+      transition: transform 240ms ease;
+    }
+
+    .menu-open .menu-backdrop {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .menu-open .app-menu { transform: translateX(0); }
+    .menu-open { overflow: hidden; }
+
+    .menu-head {
+      position: sticky;
+      top: -18px;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin: -4px 0 14px;
+      padding: 12px 4px;
+      background: rgba(15, 6, 18, 0.94);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(255, 103, 202, 0.24);
+    }
+
+    .menu-head h2 {
+      margin: 0;
+      font-size: 1.05rem;
+      letter-spacing: 0;
+    }
+
+    .menu-close {
+      appearance: none;
+      width: 42px;
+      height: 42px;
+      padding: 0;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 103, 202, 0.38);
+      background: rgba(255, 103, 202, 0.08);
+      color: #fff;
+      font-size: 1.4rem;
+      cursor: pointer;
+    }
+
+    .app-menu > section { margin-bottom: 16px; }
+
     @media (max-width: 680px) {
+      body { padding: max(13px, env(safe-area-inset-top)) 8px max(13px, env(safe-area-inset-bottom)); }
+      .app { gap: 12px; padding-top: 0; }
       .brand-row { align-items: flex-start; }
       .poster-title { font-size: clamp(3.1rem, 18vw, 5.2rem); }
       .poster-sub { letter-spacing: 0.16em; }
       .topbar.poster-hero { min-height: 330px; border-radius: 26px; }
-      .timer-card { min-height: 590px; border-radius: 34px; }
+      .timer-card { width: min(390px, 100%); min-height: calc(100dvh - 26px); border-radius: 34px; }
       .dial { width: 210px; }
       .controls { grid-template-columns: 1fr; }
     }
@@ -851,7 +970,7 @@
           <div class="logo" aria-hidden="true"><span>A</span></div>
           <div>
             <h1>Astra Pulse</h1>
-            <div class="subtitle">Version 1.3 · Lokal. Werbefrei. Offline bereit.</div>
+            <div class="subtitle">Version 1.4 · Lokal. Werbefrei. Offline bereit.</div>
           </div>
         </div>
         <div class="pill" id="status">BEREIT</div>
@@ -880,9 +999,9 @@
 
     <section class="timer-card card" aria-live="polite">
       <div class="phone-head">
-        <span aria-hidden="true">☰</span>
+        <button class="phone-action" id="openArchive" type="button" aria-label="Archiv öffnen">☰</button>
         <strong>INTERVALL</strong>
-        <span aria-hidden="true">⚙</span>
+        <button class="phone-action" id="openSettings" type="button" aria-label="Einstellungen öffnen">⚙</button>
       </div>
       <div class="pulse-line" aria-hidden="true">⌁</div>
       <div class="phase-row">
@@ -899,7 +1018,7 @@
       </div>
       <div class="timer-footer">
         <span><b>10:00</b><small>Pause</small></span>
-        <span class="play-glyph" aria-hidden="true">▶</span>
+        <button class="play-glyph" id="timerPlay" type="button" aria-label="Timer starten">▶</button>
         <span><b>20:00</b><small id="activeFooterLabel">Arbeit</small></span>
       </div>
       <div class="progress" id="progress" role="slider" aria-label="Fortschritt der aktuellen Phase" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0"><div class="bar" id="bar"></div></div>
@@ -912,6 +1031,12 @@
       <button class="danger" id="reset">RESET</button>
     </section>
 
+    <button class="menu-backdrop" id="menuBackdrop" type="button" aria-label="Menü schließen"></button>
+    <aside class="app-menu" id="appMenu" aria-label="Astra Pulse Menü" aria-hidden="true">
+      <div class="menu-head">
+        <h2>Astra Pulse Menü</h2>
+        <button class="menu-close" id="closeMenu" type="button" aria-label="Menü schließen">×</button>
+      </div>
     <section class="settings card">
       <div class="setting-grid">
         <label>Standard Aktiv
@@ -1015,6 +1140,7 @@
       </div>
       <div class="notice card update-status" id="updateStatus">Noch keine Update-Quelle gespeichert.</div>
     </section>
+    </aside>
   </main>
 
   <script>
@@ -1048,6 +1174,12 @@
       pause: document.getElementById("pause"),
       skip: document.getElementById("skip"),
       reset: document.getElementById("reset"),
+      timerPlay: document.getElementById("timerPlay"),
+      openSettings: document.getElementById("openSettings"),
+      openArchive: document.getElementById("openArchive"),
+      appMenu: document.getElementById("appMenu"),
+      closeMenu: document.getElementById("closeMenu"),
+      menuBackdrop: document.getElementById("menuBackdrop"),
       activeMinutes: document.getElementById("activeMinutes"),
       restMinutes: document.getElementById("restMinutes"),
       rounds: document.getElementById("rounds"),
@@ -1335,6 +1467,8 @@
       els.round.textContent = `Block ${state.currentRound} von ${maxRounds()}`;
       els.rounds.value = maxRounds();
       els.status.textContent = state.running ? "LAEUFT" : "BEREIT";
+      els.timerPlay.textContent = state.running ? "Ⅱ" : "▶";
+      els.timerPlay.setAttribute("aria-label", state.running ? "Timer pausieren" : "Timer starten");
       const done = state.phaseTotal > 0 ? 1 - (state.remaining / state.phaseTotal) : 0;
       const percent = Math.min(100, Math.max(0, done * 100));
       els.bar.style.width = `${percent}%`;
@@ -1426,6 +1560,25 @@
     els.pause.addEventListener("click", stop);
     els.skip.addEventListener("click", nextPhase);
     els.reset.addEventListener("click", reset);
+    els.timerPlay.addEventListener("click", () => state.running ? stop() : start());
+    function openMenu(target) {
+      document.body.classList.add("menu-open");
+      els.appMenu.setAttribute("aria-hidden", "false");
+      if (target) window.setTimeout(() => target.scrollIntoView({ behavior: "smooth", block: "start" }), 120);
+    }
+
+    function closeMenu() {
+      document.body.classList.remove("menu-open");
+      els.appMenu.setAttribute("aria-hidden", "true");
+    }
+
+    els.openSettings.addEventListener("click", () => openMenu(document.querySelector(".settings")));
+    els.openArchive.addEventListener("click", () => openMenu());
+    els.closeMenu.addEventListener("click", closeMenu);
+    els.menuBackdrop.addEventListener("click", closeMenu);
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeMenu();
+    });
 
     function seekProgress(clientX) {
       const rect = els.progress.getBoundingClientRect();
