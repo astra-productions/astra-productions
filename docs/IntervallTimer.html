@@ -949,6 +949,19 @@
 
     .app-menu > section { margin-bottom: 16px; }
 
+    .voice-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .voice-status {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+
     @media (max-width: 680px) {
       body { padding: max(13px, env(safe-area-inset-top)) 8px max(13px, env(safe-area-inset-bottom)); }
       .app { gap: 12px; padding-top: 0; }
@@ -1138,6 +1151,20 @@
 
     <section class="archive card">
       <div class="archive-head">
+        <h2>Assistentenstimme</h2>
+        <div class="version">Offline</div>
+      </div>
+      <p>Stimmenvorschau für den späteren Assistentenbereich.</p>
+      <audio id="assistantVoice" preload="metadata" src="astra-assistant-voice.mp3"></audio>
+      <div class="voice-actions">
+        <button id="playAssistantVoice" type="button" class="primary">STIMME TESTEN</button>
+        <button id="stopAssistantVoice" type="button">STOPP</button>
+      </div>
+      <p class="voice-status" id="assistantVoiceStatus" role="status">Bereit zum Abspielen.</p>
+    </section>
+
+    <section class="archive card">
+      <div class="archive-head">
         <h2>Updates</h2>
         <div class="version" id="appVersion">Version wird geladen</div>
       </div>
@@ -1222,6 +1249,10 @@
       installUpdate: document.getElementById("installUpdate"),
       clearUpdate: document.getElementById("clearUpdate"),
       updateStatus: document.getElementById("updateStatus"),
+      assistantVoice: document.getElementById("assistantVoice"),
+      playAssistantVoice: document.getElementById("playAssistantVoice"),
+      stopAssistantVoice: document.getElementById("stopAssistantVoice"),
+      assistantVoiceStatus: document.getElementById("assistantVoiceStatus"),
       installBox: document.getElementById("installBox"),
       installButton: document.getElementById("installButton")
     };
@@ -1641,9 +1672,32 @@
     }
 
     function closeMenu() {
+      if (!els.assistantVoice.paused) {
+        els.assistantVoice.pause();
+        els.assistantVoice.currentTime = 0;
+        els.assistantVoiceStatus.textContent = "Wiedergabe gestoppt.";
+      }
       document.body.classList.remove("menu-open");
       els.appMenu.setAttribute("aria-hidden", "true");
     }
+
+    els.playAssistantVoice.addEventListener("click", async () => {
+      try {
+        els.assistantVoice.currentTime = 0;
+        await els.assistantVoice.play();
+        els.assistantVoiceStatus.textContent = "Stimme wird abgespielt.";
+      } catch {
+        els.assistantVoiceStatus.textContent = "Die Stimme konnte nicht abgespielt werden.";
+      }
+    });
+    els.stopAssistantVoice.addEventListener("click", () => {
+      els.assistantVoice.pause();
+      els.assistantVoice.currentTime = 0;
+      els.assistantVoiceStatus.textContent = "Wiedergabe gestoppt.";
+    });
+    els.assistantVoice.addEventListener("ended", () => {
+      els.assistantVoiceStatus.textContent = "Vorschau beendet.";
+    });
 
     els.openSettings.addEventListener("click", () => openMenu(document.querySelector(".settings")));
     els.openArchive.addEventListener("click", () => openMenu());
