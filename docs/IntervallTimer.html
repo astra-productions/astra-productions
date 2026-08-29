@@ -2354,7 +2354,7 @@
       const profileView = view === "profile";
       els.appMenu.classList.toggle("profile-view", profileView);
       els.menuTitle.textContent = profileView ? "Astra Pulse Profil" : "Astra Pulse Menü";
-      const activeMode = getCurrentMode();
+      const activeMode = currentMode();
       els.profileActiveMode.textContent = state.phase === "rest" ? "Pause" : (activeMode?.name || "Eigener Ablauf");
       document.body.classList.add("menu-open");
       els.appMenu.setAttribute("aria-hidden", "false");
