@@ -796,8 +796,9 @@
 
     .dial {
       --dial-progress: 100%;
-      --marker-x: 83.74%;
-      --marker-y: 9.78%;
+      --marker-x: 50%;
+      --marker-y: -2.5%;
+      --marker-opacity: 1;
       position: relative;
       display: grid;
       place-items: center;
@@ -815,7 +816,7 @@
       inset: -12px;
       border-radius: inherit;
       background: conic-gradient(
-        from 40deg,
+        from 0deg,
         #ff66c9 0%,
         #b86dff calc(var(--dial-progress) * 0.42),
         #72e7ff calc(var(--dial-progress) * 0.72),
@@ -836,9 +837,11 @@
       width: 22px;
       height: 22px;
       transform: translate(-50%, -50%);
+      opacity: var(--marker-opacity);
       border-radius: 50%;
       background: linear-gradient(135deg, #ff8ce0, #c16cff);
       box-shadow: 0 0 20px rgba(255, 130, 224, 0.8);
+      will-change: left, top, opacity;
     }
 
     .clock {
@@ -1939,10 +1942,11 @@
       const percent = Math.min(100, Math.max(0, done * 100));
       const remainingPercent = Math.min(100, Math.max(0, 100 - percent));
       els.dial.style.setProperty("--dial-progress", `${remainingPercent}%`);
-      const markerAngle = (40 + remainingPercent * 3.6) * Math.PI / 180;
+      const markerAngle = (remainingPercent * 3.6) * Math.PI / 180;
       const markerRadius = 52.5;
       els.dial.style.setProperty("--marker-x", `${50 + Math.sin(markerAngle) * markerRadius}%`);
       els.dial.style.setProperty("--marker-y", `${50 - Math.cos(markerAngle) * markerRadius}%`);
+      els.dial.style.setProperty("--marker-opacity", remainingPercent > 0.05 ? "1" : "0");
       els.bar.style.width = `${percent}%`;
       els.progress.setAttribute("aria-valuenow", Math.round(percent).toString());
     }
@@ -2008,6 +2012,7 @@
       }
 
       updateDisplay();
+      if (state.running) state.timerId = window.requestAnimationFrame(tick);
     }
 
     function start() {
@@ -2021,7 +2026,7 @@
       }
       state.running = true;
       state.lastTick = Date.now();
-      state.timerId = window.setInterval(tick, 250);
+      state.timerId = window.requestAnimationFrame(tick);
       syncMetronome();
       updateDisplay();
     }
@@ -2030,7 +2035,7 @@
       state.running = false;
       state.lastTick = null;
       if (state.timerId) {
-        window.clearInterval(state.timerId);
+        window.cancelAnimationFrame(state.timerId);
         state.timerId = null;
       }
       stopMetronome();
