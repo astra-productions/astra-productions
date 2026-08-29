@@ -87,6 +87,23 @@ public class MainActivity extends FragmentActivity {
         @JavascriptInterface
         public void authenticate() {
             runOnUiThread(() -> {
+                BiometricManager manager = BiometricManager.from(MainActivity.this);
+                int availability = manager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG
+                        | BiometricManager.Authenticators.BIOMETRIC_WEAK);
+                if (availability != BiometricManager.BIOMETRIC_SUCCESS) {
+                    String message;
+                    if (availability == BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED) {
+                        message = "Auf diesem Gerät ist noch kein Fingerabdruck oder keine Biometrie eingerichtet.";
+                    } else if (availability == BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE) {
+                        message = "Dieses Gerät besitzt keinen unterstützten Biometriesensor.";
+                    } else if (availability == BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE) {
+                        message = "Der Biometriesensor ist momentan nicht verfügbar. Bitte versuche es erneut.";
+                    } else {
+                        message = "Biometrisches Entsperren wird auf diesem Gerät derzeit nicht unterstützt.";
+                    }
+                    runJs("window.astraBiometricResult({ok:false,error:" + quote(message) + "});");
+                    return;
+                }
                 BiometricPrompt prompt = new BiometricPrompt(
                         MainActivity.this,
                         ContextCompat.getMainExecutor(MainActivity.this),

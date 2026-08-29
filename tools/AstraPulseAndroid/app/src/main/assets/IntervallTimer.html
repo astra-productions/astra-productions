@@ -1294,7 +1294,7 @@
           <div class="logo" aria-hidden="true"><span>A</span></div>
           <div>
             <h1>Astra Pulse</h1>
-            <div class="subtitle">Version 2.0 · Lokal. Werbefrei. Offline bereit.</div>
+            <div class="subtitle">Version 2.1 · Lokal. Werbefrei. Offline bereit.</div>
           </div>
         </div>
         <div class="pill" id="status">BEREIT</div>
@@ -1722,9 +1722,7 @@
       els.authPassword.value = "";
       els.authPasswordConfirm.value = "";
       els.authError.textContent = "";
-      const biometricAvailable = !setup
-        && typeof window.AstraBiometric !== "undefined"
-        && window.AstraBiometric.isAvailable();
+      const biometricAvailable = !setup && typeof window.AstraBiometric !== "undefined";
       els.authBiometric.classList.toggle("show", biometricAvailable);
       els.authGate.hidden = false;
       window.setTimeout(() => (setup ? els.authUsername : els.authPassword).focus(), 80);

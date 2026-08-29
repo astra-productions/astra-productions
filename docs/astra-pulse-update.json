@@ -1,6 +1,6 @@
 {
-  "versionCode": 11,
-  "versionName": "2.0",
-  "apkUrl": "https://astra-productions.github.io/astra-productions/downloads/AstraPulse-2.0.apk",
-  "notes": "Update-Bereich entfernt, Android-Passwortmanager unterstützt und biometrisches Entsperren ergänzt."
+  "versionCode": 12,
+  "versionName": "2.1",
+  "apkUrl": "https://astra-productions.github.io/astra-productions/downloads/AstraPulse-2.1.apk",
+  "notes": "Biometrie-Schaltfläche zuverlässig sichtbar und verständliche Sensordiagnose ergänzt."
 }

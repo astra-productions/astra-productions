@@ -1,4 +1,4 @@
-const CACHE_NAME = "astra-intervall-timer-v10";
+const CACHE_NAME = "astra-intervall-timer-v11";
 const ASSETS = [
   "./",
   "IntervallTimer.html",
