@@ -1234,6 +1234,12 @@
       </div>
       <div class="settings-title">Audio</div>
       <div class="status-grid">
+        <label>Assistentenstimme
+          <select id="challengeVoiceEnabled">
+            <option value="true">An</option>
+            <option value="false">Aus</option>
+          </select>
+        </label>
         <label>Metronom
           <select id="metronomeEnabled">
             <option value="false">Aus</option>
@@ -1363,7 +1369,7 @@
       playAssistantVoiceOnStart: false,
       pauseAfterRounds: null,
       challengeTextEnabled: false,
-      challengeVoiceEnabled: false
+      challengeVoiceEnabled: true
     };
 
     const els = {
@@ -1399,6 +1405,7 @@
       activeLabel: document.getElementById("activeLabel"),
       restLabel: document.getElementById("restLabel"),
       metronomeEnabled: document.getElementById("metronomeEnabled"),
+      challengeVoiceEnabled: document.getElementById("challengeVoiceEnabled"),
       metronomeBpm: document.getElementById("metronomeBpm"),
       metronomeVolume: document.getElementById("metronomeVolume"),
       alarmEnabled: document.getElementById("alarmEnabled"),
@@ -1525,7 +1532,7 @@
     }
 
     async function playChallengeVoiceClip() {
-      if (!state.challengeVoiceEnabled) return;
+      if (!state.challengeTextEnabled || !state.challengeVoiceEnabled) return;
       const clips = challengeVoiceClips[challengeGroupKey()];
       if (!clips || !clips.length) return;
       const [startAt, endAt] = clips[(state.currentRound - 1) % clips.length];
@@ -1761,7 +1768,8 @@
       if (typeof config.alarmEnabled === "boolean") els.alarmEnabled.value = String(config.alarmEnabled);
       if (Number.isFinite(Number(config.alarmVolume))) els.alarmVolume.value = config.alarmVolume;
       state.challengeTextEnabled = config.challengeTextEnabled === true;
-      state.challengeVoiceEnabled = config.challengeVoiceEnabled === true;
+      state.challengeVoiceEnabled = config.challengeVoiceEnabled !== false;
+      els.challengeVoiceEnabled.value = String(state.challengeVoiceEnabled);
       state.pauseAfterRounds = Array.isArray(config.pauseAfterRounds) ? config.pauseAfterRounds : null;
       renderModes(Array.isArray(config.modes) && config.modes.length ? config.modes : defaultModes);
       reset();
@@ -1815,7 +1823,8 @@
         if (typeof settings.alarmEnabled === "boolean") els.alarmEnabled.value = String(settings.alarmEnabled);
         if (Number.isFinite(Number(settings.alarmVolume))) els.alarmVolume.value = settings.alarmVolume;
         state.challengeTextEnabled = settings.challengeTextEnabled === true;
-        state.challengeVoiceEnabled = settings.challengeVoiceEnabled === true;
+        state.challengeVoiceEnabled = settings.challengeVoiceEnabled !== false;
+        els.challengeVoiceEnabled.value = String(state.challengeVoiceEnabled);
         state.pauseAfterRounds = Array.isArray(settings.pauseAfterRounds) ? settings.pauseAfterRounds : null;
         const storedModes = Array.isArray(settings.modes) && settings.modes.length ? settings.modes : defaultModes;
         renderModes(migrateLegacyDefaultModes(storedModes));
@@ -2133,6 +2142,16 @@
       input.addEventListener("change", reset);
     });
 
+    els.challengeVoiceEnabled.addEventListener("change", () => {
+      state.challengeVoiceEnabled = els.challengeVoiceEnabled.value === "true";
+      if (!state.challengeVoiceEnabled) {
+        stopChallengeVoiceClip();
+      } else if (state.running && state.challengeTextEnabled) {
+        playChallengeVoiceClip();
+      }
+      saveSettings();
+    });
+
     function applyStandardActiveTime() {
       const minutes = readNumber(els.activeMinutes, 20);
       const seconds = readNumber(els.activeSeconds, 0);
@@ -2309,7 +2328,6 @@
       button.addEventListener("click", () => {
         state.pauseAfterRounds = null;
         state.challengeTextEnabled = false;
-        state.challengeVoiceEnabled = false;
         const [active, rest, rounds] = button.dataset.preset.split(",");
         renderModes([
           ...defaultModes.map((mode) => ({ ...mode, minutes: Number(active) || 20, seconds: 0 }))
@@ -2328,7 +2346,6 @@
       els.metronomeEnabled.value = "true";
       state.pauseAfterRounds = [13, 26, 39, 52, 65];
       state.challengeTextEnabled = true;
-      state.challengeVoiceEnabled = true;
       state.playAssistantVoiceOnStart = true;
       reset();
       els.assistantVoiceStatus.textContent = "Challenge 1 geladen. Die Stimme begleitet die passenden Blöcke.";
@@ -2342,7 +2359,6 @@
       els.metronomeEnabled.value = "true";
       state.pauseAfterRounds = [20, 40, 60, 80, 100, 120, 140, 160];
       state.challengeTextEnabled = true;
-      state.challengeVoiceEnabled = true;
       state.playAssistantVoiceOnStart = true;
       reset();
       els.assistantVoiceStatus.textContent = "Challenge 2 geladen: 45 Minuten. Gerätestufe 2 wird weiterhin nur manuell gewählt.";
