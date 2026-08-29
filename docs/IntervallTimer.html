@@ -449,7 +449,8 @@
       font-size: 0.78rem;
     }
 
-    #challengePreset { grid-column: 1 / -1; }
+    #challengePreset,
+    #challengeTwoPreset { grid-column: 1 / -1; }
 
     .archive {
       padding: 16px;
@@ -1257,6 +1258,7 @@
       </div>
       <div class="quick">
         <button id="challengePreset" type="button" class="primary">CHALLENGE 1</button>
+        <button id="challengeTwoPreset" type="button" class="primary">CHALLENGE 2 · 45 MIN</button>
         <button data-preset="20,10,3">20 / 10</button>
         <button data-preset="15,5,3">15 / 5</button>
         <button data-preset="10,5,4">10 / 5</button>
@@ -1406,6 +1408,7 @@
       addMode: document.getElementById("addMode"),
       resetModes: document.getElementById("resetModes"),
       challengePreset: document.getElementById("challengePreset"),
+      challengeTwoPreset: document.getElementById("challengeTwoPreset"),
       areaSelect: document.getElementById("areaSelect"),
       areaName: document.getElementById("areaName"),
       areaDescription: document.getElementById("areaDescription"),
@@ -1446,6 +1449,13 @@
       ["Normal", 25], ["Fast", 20], ["Ultraspeed", 10], ["Slow", 25],
       ["Super Speed", 10], ["Fast", 18], ["Normal", 22], ["Speed", 12],
       ["Slow", 30], ["Faster", 15], ["Super fast", 12], ["Normal", 25]
+    ];
+
+    const challengeTwoPattern = [
+      ["Normal", 20], ["Fast", 18], ["Faster", 15], ["Normal", 18],
+      ["Super fast", 14], ["Edge", 12], ["Slow", 20], ["Speed", 12],
+      ["Fast", 16], ["Super Speed", 10], ["Normal", 18], ["Faster", 14],
+      ["Edge", 15], ["Slow", 18], ["Speed", 12], ["Super fast", 13]
     ];
 
     const challengeMessages = {
@@ -1542,6 +1552,36 @@
         const cycle = Math.floor(step / challengeOnePattern.length);
         const patternIndex = (step + cycle * 7) % challengeOnePattern.length;
         const [name, preferredSeconds] = challengeOnePattern[patternIndex];
+        const remaining = targetSeconds - total;
+        let duration = Math.min(preferredSeconds, remaining);
+
+        if (remaining > preferredSeconds && remaining - preferredSeconds < 10) {
+          duration = remaining;
+        }
+
+        modes.push({
+          name,
+          minutes: Math.floor(duration / 60),
+          seconds: duration % 60
+        });
+        total += duration;
+        step += 1;
+      }
+
+      return modes;
+    }
+
+    function buildChallengeTwoModes() {
+      const targetSeconds = 42 * 60 + 20;
+      const ultraspeedSteps = new Set([18, 58, 98, 138]);
+      const modes = [];
+      let total = 0;
+      let step = 0;
+
+      while (total < targetSeconds) {
+        const [patternName, patternSeconds] = challengeTwoPattern[step % challengeTwoPattern.length];
+        const name = ultraspeedSteps.has(step) ? "Ultraspeed" : patternName;
+        const preferredSeconds = ultraspeedSteps.has(step) ? 15 : patternSeconds;
         const remaining = targetSeconds - total;
         let duration = Math.min(preferredSeconds, remaining);
 
@@ -1842,6 +1882,7 @@
       if (/ultra\s*speed/.test(keyword)) return 240;
       if (/super\s*(speed|speen)/.test(keyword)) return 210;
       if (/super\s*fast/.test(keyword)) return 160;
+      if (/edge/.test(keyword)) return 190;
       if (/speed|speen/.test(keyword)) return 180;
       if (/faster/.test(keyword)) return 130;
       if (/fast|schnell/.test(keyword)) return 100;
@@ -2291,6 +2332,20 @@
       state.playAssistantVoiceOnStart = true;
       reset();
       els.assistantVoiceStatus.textContent = "Challenge 1 geladen. Die Stimme begleitet die passenden Blöcke.";
+    });
+
+    els.challengeTwoPreset.addEventListener("click", () => {
+      renderModes(buildChallengeTwoModes());
+      els.restMinutes.value = 0;
+      els.restSecondsInput.value = 20;
+      els.pauseEvery.value = 20;
+      els.metronomeEnabled.value = "true";
+      state.pauseAfterRounds = [20, 40, 60, 80, 100, 120, 140, 160];
+      state.challengeTextEnabled = true;
+      state.challengeVoiceEnabled = true;
+      state.playAssistantVoiceOnStart = true;
+      reset();
+      els.assistantVoiceStatus.textContent = "Challenge 2 geladen: 45 Minuten. Gerätestufe 2 wird weiterhin nur manuell gewählt.";
     });
 
     window.addEventListener("beforeinstallprompt", (event) => {
