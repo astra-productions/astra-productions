@@ -6,8 +6,10 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.webkit.JavascriptInterface;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.Toast;
 
 import androidx.biometric.BiometricManager;
@@ -46,6 +48,25 @@ public class MainActivity extends FragmentActivity {
 
         webView.addJavascriptInterface(new UpdateBridge(), "AstraUpdater");
         webView.addJavascriptInterface(new BiometricBridge(), "AstraBiometric");
+        webView.setWebViewClient(new WebViewClient() {
+            private boolean handleBiometricUrl(Uri uri) {
+                if (uri != null && "astra-pulse".equals(uri.getScheme()) && "biometric".equals(uri.getHost())) {
+                    showBiometricPrompt();
+                    return true;
+                }
+                return false;
+            }
+
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                return handleBiometricUrl(request.getUrl());
+            }
+
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                return handleBiometricUrl(Uri.parse(url));
+            }
+        });
         webView.loadUrl("file:///android_asset/IntervallTimer.html");
     }
 
@@ -76,6 +97,54 @@ public class MainActivity extends FragmentActivity {
         return JSONObject.quote(value == null ? "" : value);
     }
 
+    private void showBiometricPrompt() {
+        runOnUiThread(() -> {
+            BiometricManager manager = BiometricManager.from(MainActivity.this);
+            int availability = manager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG
+                    | BiometricManager.Authenticators.BIOMETRIC_WEAK);
+            if (availability != BiometricManager.BIOMETRIC_SUCCESS) {
+                String message;
+                if (availability == BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED) {
+                    message = "Auf diesem Gerät ist noch kein Fingerabdruck oder keine Biometrie eingerichtet.";
+                } else if (availability == BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE) {
+                    message = "Dieses Gerät besitzt keinen unterstützten Biometriesensor.";
+                } else if (availability == BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE) {
+                    message = "Der Biometriesensor ist momentan nicht verfügbar. Bitte versuche es erneut.";
+                } else {
+                    message = "Biometrisches Entsperren wird auf diesem Gerät derzeit nicht unterstützt.";
+                }
+                runJs("window.astraBiometricResult({ok:false,error:" + quote(message) + "});");
+                return;
+            }
+            BiometricPrompt prompt = new BiometricPrompt(
+                    MainActivity.this,
+                    ContextCompat.getMainExecutor(MainActivity.this),
+                    new BiometricPrompt.AuthenticationCallback() {
+                        @Override
+                        public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) {
+                            super.onAuthenticationSucceeded(result);
+                            runJs("window.astraBiometricResult({ok:true});");
+                        }
+
+                        @Override
+                        public void onAuthenticationError(int errorCode, CharSequence errorMessage) {
+                            super.onAuthenticationError(errorCode, errorMessage);
+                            if (errorCode == BiometricPrompt.ERROR_USER_CANCELED
+                                    || errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON) return;
+                            runJs("window.astraBiometricResult({ok:false,error:"
+                                    + quote(errorMessage.toString()) + "});");
+                        }
+                    }
+            );
+            BiometricPrompt.PromptInfo info = new BiometricPrompt.PromptInfo.Builder()
+                    .setTitle("Astra Pulse entsperren")
+                    .setSubtitle("Mit Fingerabdruck oder Gerätebiometrie bestätigen")
+                    .setNegativeButtonText("Passwort verwenden")
+                    .build();
+            prompt.authenticate(info);
+        });
+    }
+
     public class BiometricBridge {
         @JavascriptInterface
         public boolean isAvailable() {
@@ -86,51 +155,7 @@ public class MainActivity extends FragmentActivity {
 
         @JavascriptInterface
         public void authenticate() {
-            runOnUiThread(() -> {
-                BiometricManager manager = BiometricManager.from(MainActivity.this);
-                int availability = manager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG
-                        | BiometricManager.Authenticators.BIOMETRIC_WEAK);
-                if (availability != BiometricManager.BIOMETRIC_SUCCESS) {
-                    String message;
-                    if (availability == BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED) {
-                        message = "Auf diesem Gerät ist noch kein Fingerabdruck oder keine Biometrie eingerichtet.";
-                    } else if (availability == BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE) {
-                        message = "Dieses Gerät besitzt keinen unterstützten Biometriesensor.";
-                    } else if (availability == BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE) {
-                        message = "Der Biometriesensor ist momentan nicht verfügbar. Bitte versuche es erneut.";
-                    } else {
-                        message = "Biometrisches Entsperren wird auf diesem Gerät derzeit nicht unterstützt.";
-                    }
-                    runJs("window.astraBiometricResult({ok:false,error:" + quote(message) + "});");
-                    return;
-                }
-                BiometricPrompt prompt = new BiometricPrompt(
-                        MainActivity.this,
-                        ContextCompat.getMainExecutor(MainActivity.this),
-                        new BiometricPrompt.AuthenticationCallback() {
-                            @Override
-                            public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) {
-                                super.onAuthenticationSucceeded(result);
-                                runJs("window.astraBiometricResult({ok:true});");
-                            }
-
-                            @Override
-                            public void onAuthenticationError(int errorCode, CharSequence errorMessage) {
-                                super.onAuthenticationError(errorCode, errorMessage);
-                                if (errorCode == BiometricPrompt.ERROR_USER_CANCELED
-                                        || errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON) return;
-                                runJs("window.astraBiometricResult({ok:false,error:"
-                                        + quote(errorMessage.toString()) + "});");
-                            }
-                        }
-                );
-                BiometricPrompt.PromptInfo info = new BiometricPrompt.PromptInfo.Builder()
-                        .setTitle("Astra Pulse entsperren")
-                        .setSubtitle("Mit Fingerabdruck oder Gerätebiometrie bestätigen")
-                        .setNegativeButtonText("Passwort verwenden")
-                        .build();
-                prompt.authenticate(info);
-            });
+            showBiometricPrompt();
         }
     }
 

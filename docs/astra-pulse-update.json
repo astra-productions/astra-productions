@@ -1,6 +1,6 @@
 {
-  "versionCode": 13,
-  "versionName": "2.2",
-  "apkUrl": "https://astra-productions.github.io/astra-productions/downloads/AstraPulse-2.2.apk",
-  "notes": "Fingerabdruckknopf auf der Entsperrseite immer sichtbar und Versionsanzeige ergänzt."
+  "versionCode": 14,
+  "versionName": "2.3",
+  "apkUrl": "https://astra-productions.github.io/astra-productions/downloads/AstraPulse-2.3.apk",
+  "notes": "Robuster nativer Biometrieweg unabhängig von der WebView-JavaScript-Brücke."
 }
