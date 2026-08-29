@@ -1,6 +1,6 @@
 {
-  "versionCode": 14,
-  "versionName": "2.3",
-  "apkUrl": "https://astra-productions.github.io/astra-productions/downloads/AstraPulse-2.3.apk",
-  "notes": "Robuster nativer Biometrieweg unabhängig von der WebView-JavaScript-Brücke."
+  "versionCode": 15,
+  "versionName": "2.4",
+  "apkUrl": "https://astra-productions.github.io/astra-productions/downloads/AstraPulse-2.4.apk",
+  "notes": "Fingerabdruckknopf verwendet immer direkt den nativen Android-Biometrieweg."
 }
