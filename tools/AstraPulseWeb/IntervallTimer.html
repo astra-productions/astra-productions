@@ -1208,6 +1208,7 @@
     const updateUrlKey = "astra-pulse-update-manifest-url";
     const state = {
       running: false,
+      finished: false,
       phase: "active",
       currentRound: 1,
       remaining: 20 * 60,
@@ -1705,11 +1706,14 @@
       els.restFooterTime.textContent = format(restSeconds());
       els.round.textContent = `Block ${state.currentRound} von ${maxRounds()}`;
       els.rounds.value = maxRounds();
-      els.status.textContent = state.running ? "LAEUFT" : "BEREIT";
+      els.status.textContent = state.finished ? "FERTIG" : (state.running ? "LAEUFT" : "BEREIT");
       const suggestedBpm = !isRest ? suggestedBpmForName(activeModeName()) : null;
       if (suggestedBpm) els.metronomeBpm.value = suggestedBpm;
-      els.timerPlay.textContent = state.running ? "Ⅱ" : "▶";
-      els.timerPlay.setAttribute("aria-label", state.running ? "Timer pausieren" : "Timer starten");
+      els.timerPlay.textContent = state.finished ? "↺" : (state.running ? "Ⅱ" : "▶");
+      els.timerPlay.setAttribute(
+        "aria-label",
+        state.finished ? "Session zurücksetzen" : (state.running ? "Timer pausieren" : "Timer starten")
+      );
       const done = state.phaseTotal > 0 ? 1 - (state.remaining / state.phaseTotal) : 0;
       const percent = Math.min(100, Math.max(0, done * 100));
       els.bar.style.width = `${percent}%`;
@@ -1729,9 +1733,9 @@
     }
 
     function finish() {
+      state.finished = true;
       stop();
       state.remaining = 0;
-      els.status.textContent = "FERTIG";
       updateDisplay();
       if (state.challengeTextEnabled) {
         els.challengeCopy.textContent = "Geschafft. Gar nicht schlecht. Vielleicht habe ich dich unterschätzt.";
@@ -1780,6 +1784,7 @@
 
     function start() {
       if (state.running) return;
+      if (state.finished) reset();
       try { audioContext(); } catch { /* Timer remains usable without audio. */ }
       saveSettings();
       if (state.playAssistantVoiceOnStart) {
@@ -1806,6 +1811,7 @@
     }
 
     function reset() {
+      state.finished = false;
       stop();
       saveSettings();
       state.phase = "active";
@@ -1821,7 +1827,13 @@
     els.pause.addEventListener("click", stop);
     els.skip.addEventListener("click", nextPhase);
     els.reset.addEventListener("click", reset);
-    els.timerPlay.addEventListener("click", () => state.running ? stop() : start());
+    els.timerPlay.addEventListener("click", () => {
+      if (state.finished) {
+        reset();
+        return;
+      }
+      state.running ? stop() : start();
+    });
     function openMenu(target) {
       document.body.classList.add("menu-open");
       els.appMenu.setAttribute("aria-hidden", "false");
