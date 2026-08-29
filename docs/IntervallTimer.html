@@ -870,6 +870,11 @@
 
     .play-glyph:active { transform: scale(0.94); }
 
+    .play-glyph:disabled {
+      opacity: 0.38;
+      cursor: default;
+    }
+
     .play-glyph:focus-visible {
       outline: 2px solid #72e7ff;
       outline-offset: 4px;
@@ -882,6 +887,23 @@
       margin-top: 22px;
       background: rgba(0, 0, 0, 0.64);
     }
+
+    .session-reset {
+      display: none;
+      place-items: center;
+      width: 48px;
+      height: 48px;
+      margin: 14px auto 0;
+      padding: 0;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 112, 219, 0.58);
+      background: rgba(255, 112, 219, 0.12);
+      color: #fff;
+      font-size: 1.45rem;
+      cursor: pointer;
+    }
+
+    .session-reset.show { display: grid; }
 
     .controls {
       display: none;
@@ -1053,6 +1075,7 @@
         <span><b id="activeFooterTime">20:00</b><small id="activeFooterLabel">Arbeit</small></span>
       </div>
       <div class="progress" id="progress" role="slider" aria-label="Fortschritt der aktuellen Phase" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0"><div class="bar" id="bar"></div></div>
+      <button class="session-reset" id="sessionReset" type="button" aria-label="Session zurücksetzen" title="Session zurücksetzen">↺</button>
     </section>
 
     <section class="controls">
@@ -1241,6 +1264,7 @@
       skip: document.getElementById("skip"),
       reset: document.getElementById("reset"),
       timerPlay: document.getElementById("timerPlay"),
+      sessionReset: document.getElementById("sessionReset"),
       openSettings: document.getElementById("openSettings"),
       openArchive: document.getElementById("openArchive"),
       appMenu: document.getElementById("appMenu"),
@@ -1709,11 +1733,10 @@
       els.status.textContent = state.finished ? "FERTIG" : (state.running ? "LAEUFT" : "BEREIT");
       const suggestedBpm = !isRest ? suggestedBpmForName(activeModeName()) : null;
       if (suggestedBpm) els.metronomeBpm.value = suggestedBpm;
-      els.timerPlay.textContent = state.finished ? "↺" : (state.running ? "Ⅱ" : "▶");
-      els.timerPlay.setAttribute(
-        "aria-label",
-        state.finished ? "Session zurücksetzen" : (state.running ? "Timer pausieren" : "Timer starten")
-      );
+      els.timerPlay.textContent = state.running ? "Ⅱ" : "▶";
+      els.timerPlay.setAttribute("aria-label", state.running ? "Timer pausieren" : "Timer starten");
+      els.timerPlay.disabled = state.finished;
+      els.sessionReset.classList.toggle("show", state.finished);
       const done = state.phaseTotal > 0 ? 1 - (state.remaining / state.phaseTotal) : 0;
       const percent = Math.min(100, Math.max(0, done * 100));
       els.bar.style.width = `${percent}%`;
@@ -1784,7 +1807,7 @@
 
     function start() {
       if (state.running) return;
-      if (state.finished) reset();
+      if (state.finished) return;
       try { audioContext(); } catch { /* Timer remains usable without audio. */ }
       saveSettings();
       if (state.playAssistantVoiceOnStart) {
@@ -1828,12 +1851,9 @@
     els.skip.addEventListener("click", nextPhase);
     els.reset.addEventListener("click", reset);
     els.timerPlay.addEventListener("click", () => {
-      if (state.finished) {
-        reset();
-        return;
-      }
       state.running ? stop() : start();
     });
+    els.sessionReset.addEventListener("click", reset);
     function openMenu(target) {
       document.body.classList.add("menu-open");
       els.appMenu.setAttribute("aria-hidden", "false");
