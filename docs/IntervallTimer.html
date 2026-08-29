@@ -1055,16 +1055,29 @@
     }
 
     @media (max-width: 680px) {
-      html, body { width: 100%; height: 100%; overflow-x: hidden; }
+      html, body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        overscroll-behavior: none;
+      }
       body { padding: 0; }
-      .app { width: 100%; gap: 0; padding: 0; }
+      .app {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        gap: 0;
+        padding: 0;
+        overflow: hidden;
+      }
       .brand-row { align-items: flex-start; }
       .poster-title { font-size: clamp(3.1rem, 18vw, 5.2rem); }
       .poster-sub { letter-spacing: 0.16em; }
       .topbar.poster-hero { min-height: 330px; border-radius: 26px; }
       .timer-card {
         width: 100%;
-        height: 100dvh;
+        height: 100%;
         min-height: 0;
         padding: max(16px, env(safe-area-inset-top)) 18px max(14px, env(safe-area-inset-bottom));
         border: 0;
