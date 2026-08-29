@@ -1268,6 +1268,7 @@
   <section class="auth-gate" id="authGate" aria-label="Lokale Anmeldung">
     <div class="auth-card">
       <div class="auth-mark">ASTRA PULSE</div>
+      <div class="version" id="authVersion">Version 2.2</div>
       <h1 id="authTitle">Lokales Profil einrichten</h1>
       <p class="auth-copy" id="authCopy">Erstelle deine persönliche Anmeldung für dieses Gerät.</p>
       <form id="authForm">
@@ -1294,7 +1295,7 @@
           <div class="logo" aria-hidden="true"><span>A</span></div>
           <div>
             <h1>Astra Pulse</h1>
-            <div class="subtitle">Version 2.1 · Lokal. Werbefrei. Offline bereit.</div>
+            <div class="subtitle">Version 2.2 · Lokal. Werbefrei. Offline bereit.</div>
           </div>
         </div>
         <div class="pill" id="status">BEREIT</div>
@@ -1722,8 +1723,7 @@
       els.authPassword.value = "";
       els.authPasswordConfirm.value = "";
       els.authError.textContent = "";
-      const biometricAvailable = !setup && typeof window.AstraBiometric !== "undefined";
-      els.authBiometric.classList.toggle("show", biometricAvailable);
+      els.authBiometric.classList.toggle("show", !setup);
       els.authGate.hidden = false;
       window.setTimeout(() => (setup ? els.authUsername : els.authPassword).focus(), 80);
     }
@@ -2503,7 +2503,11 @@
     els.authForm.addEventListener("submit", submitLocalAuth);
     els.authBiometric.addEventListener("click", () => {
       els.authError.textContent = "";
-      if (typeof window.AstraBiometric !== "undefined") window.AstraBiometric.authenticate();
+      if (typeof window.AstraBiometric !== "undefined") {
+        window.AstraBiometric.authenticate();
+      } else {
+        els.authError.textContent = "Fingerabdruck ist nur in der aktuellen Android-App verfügbar.";
+      }
     });
     els.lockApp.addEventListener("click", showLocalAuth);
     document.addEventListener("keydown", (event) => {
