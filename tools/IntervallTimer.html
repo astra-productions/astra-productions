@@ -1089,6 +1089,10 @@
       box-shadow: 0 0 14px rgba(255, 55, 204, 0.16), inset 0 0 22px rgba(134, 70, 255, 0.05);
     }
 
+    .app-menu.profile-view > section:not(.local-profile) {
+      display: none;
+    }
+
     .local-profile {
       display: grid;
       gap: 12px;
@@ -1333,7 +1337,7 @@
     <button class="menu-backdrop" id="menuBackdrop" type="button" aria-label="Menü schließen"></button>
     <aside class="app-menu" id="appMenu" aria-label="Astra Pulse Menü" aria-hidden="true">
       <div class="menu-head">
-        <h2>Astra Pulse Menü</h2>
+        <h2 id="menuTitle">Astra Pulse Menü</h2>
         <button class="menu-close" id="closeMenu" type="button" aria-label="Menü schließen">×</button>
     </div>
     <section class="local-profile card" id="localProfile">
@@ -1343,6 +1347,7 @@
       </div>
       <dl class="profile-data">
         <dt>Benutzername</dt><dd id="profileUsername">Nicht eingerichtet</dd>
+        <dt>Aktiver Modus</dt><dd id="profileActiveMode">Eigener Ablauf</dd>
         <dt>Erstellt</dt><dd id="profileCreated">-</dd>
         <dt>Speicherung</dt><dd>Nur lokal</dd>
       </dl>
@@ -1521,7 +1526,8 @@
       playAssistantVoiceOnStart: false,
       pauseAfterRounds: null,
       challengeTextEnabled: false,
-      challengeVoiceEnabled: true
+      challengeVoiceEnabled: true,
+      activePreset: "Eigener Ablauf"
     };
 
     const els = {
@@ -1546,6 +1552,7 @@
       openSettings: document.getElementById("openSettings"),
       openArchive: document.getElementById("openArchive"),
       appMenu: document.getElementById("appMenu"),
+      menuTitle: document.getElementById("menuTitle"),
       closeMenu: document.getElementById("closeMenu"),
       menuBackdrop: document.getElementById("menuBackdrop"),
       activeMinutes: document.getElementById("activeMinutes"),
@@ -1598,6 +1605,7 @@
       authError: document.getElementById("authError"),
       authSubmit: document.getElementById("authSubmit"),
       profileUsername: document.getElementById("profileUsername"),
+      profileActiveMode: document.getElementById("profileActiveMode"),
       profileCreated: document.getElementById("profileCreated"),
       localProfile: document.getElementById("localProfile"),
       lockApp: document.getElementById("lockApp")
@@ -2342,11 +2350,15 @@
       state.running ? stop() : start();
     });
     els.sessionReset.addEventListener("click", reset);
-    function openMenu(target) {
+    function openMenu(view = "menu") {
+      const profileView = view === "profile";
+      els.appMenu.classList.toggle("profile-view", profileView);
+      els.menuTitle.textContent = profileView ? "Astra Pulse Profil" : "Astra Pulse Menü";
+      const activeMode = getCurrentMode();
+      els.profileActiveMode.textContent = state.phase === "rest" ? "Pause" : (activeMode?.name || "Eigener Ablauf");
       document.body.classList.add("menu-open");
       els.appMenu.setAttribute("aria-hidden", "false");
       els.appMenu.scrollTo({ top: 0, behavior: "auto" });
-      if (target) window.setTimeout(() => target.scrollIntoView({ behavior: "smooth", block: "start" }), 120);
     }
 
     function closeMenu() {
@@ -2377,8 +2389,8 @@
       els.assistantVoiceStatus.textContent = "Vorschau beendet.";
     });
 
-    els.openSettings.addEventListener("click", () => openMenu(els.localProfile));
-    els.openArchive.addEventListener("click", () => openMenu());
+    els.openSettings.addEventListener("click", () => openMenu("profile"));
+    els.openArchive.addEventListener("click", () => openMenu("menu"));
     els.closeMenu.addEventListener("click", closeMenu);
     els.menuBackdrop.addEventListener("click", closeMenu);
     els.authForm.addEventListener("submit", submitLocalAuth);
@@ -2611,6 +2623,7 @@
 
     document.querySelectorAll("[data-preset]").forEach((button) => {
       button.addEventListener("click", () => {
+        state.activePreset = "Eigener Ablauf";
         state.pauseAfterRounds = null;
         state.challengeTextEnabled = false;
         const [active, rest, rounds] = button.dataset.preset.split(",");
@@ -2624,6 +2637,7 @@
     });
 
     els.challengePreset.addEventListener("click", () => {
+      state.activePreset = "Challenge 1";
       renderModes(buildChallengeOneModes());
       els.restMinutes.value = 0;
       els.restSecondsInput.value = 20;
@@ -2637,6 +2651,7 @@
     });
 
     els.challengeTwoPreset.addEventListener("click", () => {
+      state.activePreset = "Challenge 2";
       renderModes(buildChallengeTwoModes());
       els.restMinutes.value = 0;
       els.restSecondsInput.value = 20;
