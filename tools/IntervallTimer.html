@@ -1017,9 +1017,9 @@
       overflow-y: auto;
       overscroll-behavior: contain;
       padding: max(18px, env(safe-area-inset-top)) 14px max(24px, env(safe-area-inset-bottom));
-      background: linear-gradient(180deg, #160719 0%, #08050d 100%);
-      border-right: 1px solid rgba(255, 103, 202, 0.36);
-      box-shadow: 24px 0 60px rgba(0, 0, 0, 0.64);
+      background: radial-gradient(circle at 50% 8%, rgba(171, 63, 255, 0.16), transparent 28%), linear-gradient(180deg, #10061c 0%, #08050f 100%);
+      border-right: 2px solid #ff5fd8;
+      box-shadow: 8px 0 18px rgba(255, 70, 211, 0.34), 24px 0 60px rgba(0, 0, 0, 0.72), inset -10px 0 28px rgba(160, 67, 255, 0.08);
       transform: translateX(-104%);
       transition: transform 240ms ease;
       scrollbar-width: none;
@@ -1045,9 +1045,10 @@
       gap: 16px;
       margin: -4px 0 14px;
       padding: 12px 4px;
-      background: rgba(15, 6, 18, 0.94);
+      background: rgba(12, 5, 24, 0.96);
       backdrop-filter: blur(16px);
-      border-bottom: 1px solid rgba(255, 103, 202, 0.24);
+      border-bottom: 1px solid #ff5fd8;
+      box-shadow: 0 8px 24px rgba(255, 62, 207, 0.14);
     }
 
     .menu-head h2 {
@@ -1060,16 +1061,97 @@
       appearance: none;
       width: 42px;
       height: 42px;
+      min-width: 42px;
+      min-height: 42px;
+      flex: 0 0 42px;
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+      line-height: 1;
       padding: 0;
       border-radius: 50%;
-      border: 1px solid rgba(255, 103, 202, 0.38);
-      background: rgba(255, 103, 202, 0.08);
+      border: 1px solid #ff68dc;
+      background: radial-gradient(circle, rgba(255, 88, 214, 0.2), rgba(41, 16, 62, 0.94));
       color: #fff;
       font-size: 1.4rem;
       cursor: pointer;
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.25), 0 0 20px rgba(255, 62, 210, 0.62), inset 0 0 14px rgba(255, 116, 225, 0.12);
     }
 
-    .app-menu > section { margin-bottom: 16px; }
+    .app-menu > section {
+      margin-bottom: 16px;
+      scroll-margin-top: 76px;
+    }
+
+    .app-menu .card {
+      border-color: rgba(255, 87, 211, 0.54);
+      background: linear-gradient(180deg, rgba(29, 10, 39, 0.9), rgba(15, 7, 24, 0.94));
+      box-shadow: 0 0 14px rgba(255, 55, 204, 0.16), inset 0 0 22px rgba(134, 70, 255, 0.05);
+    }
+
+    .local-profile {
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+    }
+
+    .profile-data {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 9px 14px;
+      margin: 0;
+      padding: 12px;
+      border: 1px solid rgba(157, 89, 255, 0.36);
+      border-radius: 8px;
+      background: rgba(7, 4, 15, 0.58);
+    }
+
+    .profile-data dt { color: var(--muted); }
+    .profile-data dd { margin: 0; color: #fff; font-weight: 800; text-align: right; }
+
+    .local-only-note {
+      margin: 0;
+      color: #f4cbe8;
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+
+    .auth-gate {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      background: radial-gradient(circle at 50% 30%, rgba(167, 56, 255, 0.2), transparent 34%), rgba(4, 2, 10, 0.98);
+      backdrop-filter: blur(18px);
+    }
+
+    .auth-gate[hidden], .auth-confirm[hidden] { display: none !important; }
+
+    .auth-card {
+      width: min(420px, 100%);
+      padding: 26px 22px;
+      border: 2px solid #ff61db;
+      border-radius: 26px;
+      background: linear-gradient(180deg, rgba(17, 13, 35, 0.99), rgba(9, 5, 20, 0.99));
+      box-shadow: 0 0 9px rgba(255, 255, 255, 0.3), 0 0 30px rgba(255, 54, 211, 0.62), inset 0 0 28px rgba(111, 64, 255, 0.1);
+    }
+
+    .auth-mark {
+      margin-bottom: 8px;
+      color: #ff88df;
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      text-align: center;
+      text-shadow: 0 0 14px rgba(255, 71, 209, 0.75);
+    }
+
+    .auth-card h1 { margin: 0; text-align: center; font-size: 1.35rem; }
+    .auth-copy { margin: 8px 0 18px; color: var(--muted); font-size: 0.86rem; line-height: 1.45; text-align: center; }
+    .auth-card form { display: grid; gap: 12px; }
+    .auth-error { min-height: 20px; margin: 0; color: #ff899b; font-size: 0.82rem; text-align: center; }
+    .auth-privacy { margin: 14px 0 0; color: #d5b9d0; font-size: 0.76rem; line-height: 1.4; text-align: center; }
 
     .voice-actions {
       display: grid;
@@ -1155,6 +1237,27 @@
   </style>
 </head>
 <body>
+  <section class="auth-gate" id="authGate" aria-label="Lokale Anmeldung">
+    <div class="auth-card">
+      <div class="auth-mark">ASTRA PULSE</div>
+      <h1 id="authTitle">Lokales Profil einrichten</h1>
+      <p class="auth-copy" id="authCopy">Erstelle deine persönliche Anmeldung für dieses Gerät.</p>
+      <form id="authForm">
+        <label>Benutzername
+          <input id="authUsername" type="text" minlength="2" maxlength="32" autocomplete="username" required>
+        </label>
+        <label>PIN oder Passwort
+          <input id="authPassword" type="password" minlength="4" maxlength="128" autocomplete="current-password" required>
+        </label>
+        <label class="auth-confirm" id="authConfirmWrap">PIN oder Passwort wiederholen
+          <input id="authPasswordConfirm" type="password" minlength="4" maxlength="128" autocomplete="new-password">
+        </label>
+        <p class="auth-error" id="authError" role="alert"></p>
+        <button class="primary" id="authSubmit" type="submit">LOKALES PROFIL ERSTELLEN</button>
+      </form>
+      <p class="auth-privacy">Keine Cloud, kein Konto bei Astra und keine Übertragung. Die Zugangsdaten bleiben ausschließlich lokal auf diesem Gerät.</p>
+    </div>
+  </section>
   <main class="app">
     <header class="topbar poster-hero">
       <div class="brand-row">
@@ -1233,6 +1336,19 @@
         <h2>Astra Pulse Menü</h2>
         <button class="menu-close" id="closeMenu" type="button" aria-label="Menü schließen">×</button>
     </div>
+    <section class="local-profile card" id="localProfile">
+      <div class="archive-head">
+        <h2>Lokales Profil</h2>
+        <div class="version">Geräteschutz</div>
+      </div>
+      <dl class="profile-data">
+        <dt>Benutzername</dt><dd id="profileUsername">Nicht eingerichtet</dd>
+        <dt>Erstellt</dt><dd id="profileCreated">-</dd>
+        <dt>Speicherung</dt><dd>Nur lokal</dd>
+      </dl>
+      <p class="local-only-note">Astra erhebt oder überträgt diese Daten nicht. Ohne deine lokale PIN oder dein Passwort kann die App nach einem Neustart nicht geöffnet werden.</p>
+      <button id="lockApp" type="button">APP JETZT SPERREN</button>
+    </section>
     <section class="settings card">
       <div class="settings-title">Timer</div>
       <div class="setting-grid">
@@ -1387,6 +1503,7 @@
     const storageKey = "astra-interval-timer-settings";
     const archiveKey = "astra-pulse-areas-v1";
     const updateUrlKey = "astra-pulse-update-manifest-url";
+    const localProfileKey = "astra-pulse-local-profile-v1";
     const state = {
       running: false,
       finished: false,
@@ -1469,8 +1586,137 @@
       stopAssistantVoice: document.getElementById("stopAssistantVoice"),
       assistantVoiceStatus: document.getElementById("assistantVoiceStatus"),
       installBox: document.getElementById("installBox"),
-      installButton: document.getElementById("installButton")
+      installButton: document.getElementById("installButton"),
+      authGate: document.getElementById("authGate"),
+      authTitle: document.getElementById("authTitle"),
+      authCopy: document.getElementById("authCopy"),
+      authForm: document.getElementById("authForm"),
+      authUsername: document.getElementById("authUsername"),
+      authPassword: document.getElementById("authPassword"),
+      authPasswordConfirm: document.getElementById("authPasswordConfirm"),
+      authConfirmWrap: document.getElementById("authConfirmWrap"),
+      authError: document.getElementById("authError"),
+      authSubmit: document.getElementById("authSubmit"),
+      profileUsername: document.getElementById("profileUsername"),
+      profileCreated: document.getElementById("profileCreated"),
+      localProfile: document.getElementById("localProfile"),
+      lockApp: document.getElementById("lockApp")
     };
+
+    function bytesToBase64(bytes) {
+      return btoa(String.fromCharCode(...bytes));
+    }
+
+    function base64ToBytes(value) {
+      return Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
+    }
+
+    async function deriveLocalSecret(secret, salt) {
+      if (!window.crypto?.subtle) throw new Error("Sichere lokale Anmeldung wird auf diesem Gerät nicht unterstützt.");
+      const material = await window.crypto.subtle.importKey(
+        "raw",
+        new TextEncoder().encode(secret),
+        "PBKDF2",
+        false,
+        ["deriveBits"]
+      );
+      const bits = await window.crypto.subtle.deriveBits(
+        { name: "PBKDF2", hash: "SHA-256", salt, iterations: 150000 },
+        material,
+        256
+      );
+      return bytesToBase64(new Uint8Array(bits));
+    }
+
+    function readLocalProfile() {
+      try {
+        const profile = JSON.parse(localStorage.getItem(localProfileKey) || "null");
+        return profile?.username && profile?.salt && profile?.hash ? profile : null;
+      } catch {
+        localStorage.removeItem(localProfileKey);
+        return null;
+      }
+    }
+
+    function updateLocalProfileView() {
+      const profile = readLocalProfile();
+      els.profileUsername.textContent = profile?.username || "Nicht eingerichtet";
+      els.profileCreated.textContent = profile?.createdAt
+        ? new Date(profile.createdAt).toLocaleDateString("de-DE")
+        : "-";
+    }
+
+    function showLocalAuth() {
+      const profile = readLocalProfile();
+      const setup = !profile;
+      stop();
+      closeMenu();
+      els.authGate.dataset.mode = setup ? "setup" : "login";
+      els.authTitle.textContent = setup ? "Lokales Profil einrichten" : "Astra Pulse entsperren";
+      els.authCopy.textContent = setup
+        ? "Erstelle deine persönliche Anmeldung für dieses Gerät."
+        : "Melde dich mit den ausschließlich lokal gespeicherten Zugangsdaten an.";
+      els.authSubmit.textContent = setup ? "LOKALES PROFIL ERSTELLEN" : "APP ENTSPERREN";
+      els.authConfirmWrap.hidden = !setup;
+      els.authPassword.autocomplete = setup ? "new-password" : "current-password";
+      els.authUsername.value = profile?.username || "";
+      els.authPassword.value = "";
+      els.authPasswordConfirm.value = "";
+      els.authError.textContent = "";
+      els.authGate.hidden = false;
+      window.setTimeout(() => (setup ? els.authUsername : els.authPassword).focus(), 80);
+    }
+
+    async function submitLocalAuth(event) {
+      event.preventDefault();
+      const setup = els.authGate.dataset.mode === "setup";
+      const username = els.authUsername.value.trim();
+      const secret = els.authPassword.value;
+      els.authError.textContent = "";
+
+      if (username.length < 2) {
+        els.authError.textContent = "Der Benutzername benötigt mindestens 2 Zeichen.";
+        return;
+      }
+      if (secret.length < 4) {
+        els.authError.textContent = "PIN oder Passwort benötigt mindestens 4 Zeichen.";
+        return;
+      }
+      if (setup && secret !== els.authPasswordConfirm.value) {
+        els.authError.textContent = "Die beiden Eingaben stimmen nicht überein.";
+        return;
+      }
+
+      els.authSubmit.disabled = true;
+      try {
+        if (setup) {
+          const salt = window.crypto.getRandomValues(new Uint8Array(16));
+          const hash = await deriveLocalSecret(secret, salt);
+          localStorage.setItem(localProfileKey, JSON.stringify({
+            username,
+            salt: bytesToBase64(salt),
+            hash,
+            createdAt: new Date().toISOString()
+          }));
+        } else {
+          const profile = readLocalProfile();
+          const hash = profile ? await deriveLocalSecret(secret, base64ToBytes(profile.salt)) : "";
+          if (!profile || username !== profile.username || hash !== profile.hash) {
+            els.authError.textContent = "Benutzername oder PIN/Passwort ist falsch.";
+            return;
+          }
+        }
+
+        els.authGate.hidden = true;
+        els.authPassword.value = "";
+        els.authPasswordConfirm.value = "";
+        updateLocalProfileView();
+      } catch (error) {
+        els.authError.textContent = error?.message || "Die lokale Anmeldung konnte nicht verarbeitet werden.";
+      } finally {
+        els.authSubmit.disabled = false;
+      }
+    }
 
     const defaultModes = [
       { name: "Slow", minutes: 20, seconds: 0 },
@@ -2131,10 +2377,12 @@
       els.assistantVoiceStatus.textContent = "Vorschau beendet.";
     });
 
-    els.openSettings.addEventListener("click", () => openMenu(document.querySelector(".settings")));
+    els.openSettings.addEventListener("click", () => openMenu(els.localProfile));
     els.openArchive.addEventListener("click", () => openMenu());
     els.closeMenu.addEventListener("click", closeMenu);
     els.menuBackdrop.addEventListener("click", closeMenu);
+    els.authForm.addEventListener("submit", submitLocalAuth);
+    els.lockApp.addEventListener("click", showLocalAuth);
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") closeMenu();
     });
@@ -2424,6 +2672,8 @@
     renderAreas();
     loadUpdateSettings();
     reset();
+    updateLocalProfileView();
+    showLocalAuth();
   </script>
 </body>
 </html>
