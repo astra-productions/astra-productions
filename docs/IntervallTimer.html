@@ -409,6 +409,8 @@
       font-size: 0.78rem;
     }
 
+    #challengePreset { grid-column: 1 / -1; }
+
     .archive {
       padding: 16px;
       display: grid;
@@ -807,6 +809,21 @@
       font-size: 0.84rem;
     }
 
+    .challenge-copy {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      place-items: center;
+      min-height: 58px;
+      margin: 4px 8px 0;
+      color: rgba(255, 235, 249, 0.92);
+      font-size: 0.9rem;
+      line-height: 1.4;
+      text-align: center;
+    }
+
+    .challenge-copy:empty { visibility: hidden; }
+
     .timer-footer {
       position: relative;
       z-index: 1;
@@ -983,7 +1000,7 @@
           <div class="logo" aria-hidden="true"><span>A</span></div>
           <div>
             <h1>Astra Pulse</h1>
-            <div class="subtitle">Version 1.6 · Lokal. Werbefrei. Offline bereit.</div>
+            <div class="subtitle">Version 1.7 · Lokal. Werbefrei. Offline bereit.</div>
           </div>
         </div>
         <div class="pill" id="status">BEREIT</div>
@@ -1029,6 +1046,7 @@
           <div class="dial-label" id="dialLabel">Arbeit</div>
         </div>
       </div>
+      <p class="challenge-copy" id="challengeCopy"></p>
       <div class="timer-footer">
         <span><b id="restFooterTime">10:00</b><small>Pause</small></span>
         <button class="play-glyph" id="timerPlay" type="button" aria-label="Timer starten">▶</button>
@@ -1115,11 +1133,13 @@
         <option value="Super fast"></option>
         <option value="Speed"></option>
         <option value="Super Speed"></option>
+        <option value="Ultraspeed"></option>
         <option value="Pause"></option>
         <option value="Check"></option>
         <option value="Recovery"></option>
       </datalist>
       <div class="quick">
+        <button id="challengePreset" type="button" class="primary">TEST 1</button>
         <button data-preset="20,10,3">20 / 10</button>
         <button data-preset="15,5,3">15 / 5</button>
         <button data-preset="10,5,4">10 / 5</button>
@@ -1197,7 +1217,10 @@
       installPrompt: null,
       pendingUpdateApk: "",
       audioContext: null,
-      metronomeId: null
+      metronomeId: null,
+      playAssistantVoiceOnStart: false,
+      pauseAfterRounds: null,
+      challengeTextEnabled: false
     };
 
     const els = {
@@ -1205,6 +1228,7 @@
       phase: document.getElementById("phase"),
       clock: document.getElementById("clock"),
       dialLabel: document.getElementById("dialLabel"),
+      challengeCopy: document.getElementById("challengeCopy"),
       activeFooterLabel: document.getElementById("activeFooterLabel"),
       activeFooterTime: document.getElementById("activeFooterTime"),
       restFooterTime: document.getElementById("restFooterTime"),
@@ -1236,6 +1260,7 @@
       modeList: document.getElementById("modeList"),
       addMode: document.getElementById("addMode"),
       resetModes: document.getElementById("resetModes"),
+      challengePreset: document.getElementById("challengePreset"),
       areaSelect: document.getElementById("areaSelect"),
       areaName: document.getElementById("areaName"),
       areaDescription: document.getElementById("areaDescription"),
@@ -1266,6 +1291,113 @@
       { name: "Speed", minutes: 20, seconds: 0 },
       { name: "Super Speed", minutes: 20, seconds: 0 }
     ];
+
+    const testOnePattern = [
+      ["Slow", 30], ["Normal", 25], ["Fast", 20], ["Slow", 25],
+      ["Faster", 18], ["Normal", 20], ["Super fast", 15], ["Fast", 20],
+      ["Speed", 12], ["Slow", 30], ["Super Speed", 10], ["Normal", 25],
+      ["Ultraspeed", 10], ["Faster", 18], ["Fast", 20], ["Slow", 30],
+      ["Speed", 12], ["Normal", 20], ["Super fast", 15], ["Faster", 18],
+      ["Normal", 25], ["Fast", 20], ["Ultraspeed", 10], ["Slow", 25],
+      ["Super Speed", 10], ["Fast", 18], ["Normal", 22], ["Speed", 12],
+      ["Slow", 30], ["Faster", 15], ["Super fast", 12], ["Normal", 25]
+    ];
+
+    const challengeMessages = {
+      slow: [
+        "Ganz langsam. Ich weiß, Geduld ist nicht deine Stärke.",
+        "Nicht so hastig. Ich gebe das Tempo vor.",
+        "Ruhig bleiben. Wir haben noch einiges vor.",
+        "Schon ungeduldig? Das war zu erwarten."
+      ],
+      normal: [
+        "So ist es besser. Schön kontrolliert bleiben.",
+        "Noch sieht das ziemlich entspannt aus.",
+        "Halte den Rhythmus. Keine eigenen Regeln.",
+        "Na also. Vielleicht kannst du doch zuhören."
+      ],
+      fast: [
+        "Jetzt etwas schneller. Versuch mitzuhalten.",
+        "Nicht nachlassen. Wir sind gerade erst warm.",
+        "Du wolltest Abwechslung. Bitte sehr.",
+        "Immer noch so selbstsicher?"
+      ],
+      faster: [
+        "Mehr Tempo. Keine Ausreden.",
+        "Das wird schwieriger, nicht wahr?",
+        "Konzentrier dich. Ich bin noch nicht fertig.",
+        "Zeig mir, dass du nicht nur große Worte hast."
+      ],
+      superfast: [
+        "Jetzt wird es ernst. Bleib bei mir.",
+        "Nicht schwach werden. Noch nicht.",
+        "Oh, wird es etwa schon schwierig?",
+        "Weiter. Ich lasse das gelten, fürs Erste."
+      ],
+      speed: [
+        "Keine Ablenkung. Nur dieses Tempo.",
+        "Du wolltest eine Herausforderung. Da ist sie.",
+        "Komm schon. Das kannst du besser.",
+        "Nicht langsamer werden. Ich merke das."
+      ],
+      superspeed: [
+        "Jetzt kannst du zeigen, was wirklich in dir steckt.",
+        "Halte durch. Beeindruck mich wenigstens ein bisschen.",
+        "Du kannst ruhig so tun, als wäre alles unter Kontrolle.",
+        "Noch da? Gut. Dann weiter."
+      ],
+      ultraspeed: [
+        "Ultraspeed. Jetzt gibt es keine Ausreden mehr.",
+        "Na los. Überrasche mich.",
+        "Nicht nachlassen. Nicht ausgerechnet jetzt.",
+        "Das ist deine Spitze. Zeig, was du kannst."
+      ],
+      pause: [
+        "Stopp. Ja, ausgerechnet jetzt.",
+        "Du möchtest weitermachen? Wie schade.",
+        "Geduld. Die nächste Runde kommt früh genug.",
+        "Nur zwanzig Sekunden. Du wirst es überleben.",
+        "Ich weiß, Warten ist nicht deine Stärke."
+      ]
+    };
+
+    function currentChallengeMessage() {
+      if (!state.challengeTextEnabled) return "";
+      const key = state.phase === "rest"
+        ? "pause"
+        : activeModeName().toLowerCase().replace(/\s+/g, "");
+      const messages = challengeMessages[key] || challengeMessages.normal;
+      return messages[(state.currentRound - 1) % messages.length];
+    }
+
+    function buildTestOneModes() {
+      const targetSeconds = 28 * 60 + 20;
+      const modes = [];
+      let total = 0;
+      let step = 0;
+
+      while (total < targetSeconds) {
+        const cycle = Math.floor(step / testOnePattern.length);
+        const patternIndex = (step + cycle * 7) % testOnePattern.length;
+        const [name, preferredSeconds] = testOnePattern[patternIndex];
+        const remaining = targetSeconds - total;
+        let duration = Math.min(preferredSeconds, remaining);
+
+        if (remaining > preferredSeconds && remaining - preferredSeconds < 10) {
+          duration = remaining;
+        }
+
+        modes.push({
+          name,
+          minutes: Math.floor(duration / 60),
+          seconds: duration % 60
+        });
+        total += duration;
+        step += 1;
+      }
+
+      return modes;
+    }
 
     function readNumber(input, fallback) {
       const value = Number.parseInt(input.value, 10);
@@ -1330,7 +1462,10 @@
         <button class="small-danger" type="button" aria-label="Status entfernen">X</button>
       `;
       row.querySelectorAll("input").forEach((input) => {
-        input.addEventListener("change", reset);
+        input.addEventListener("change", () => {
+          state.pauseAfterRounds = null;
+          reset();
+        });
       });
       row.querySelector("button").addEventListener("click", () => {
         if (els.modeList.querySelectorAll(".mode-row").length <= 1) {
@@ -1365,6 +1500,8 @@
         metronomeBpm: readNumber(els.metronomeBpm, 60),
         alarmEnabled: els.alarmEnabled.value === "true",
         alarmVolume: readNumber(els.alarmVolume, 70),
+        challengeTextEnabled: state.challengeTextEnabled,
+        pauseAfterRounds: state.pauseAfterRounds,
         modes: readModes()
       };
       localStorage.setItem(storageKey, JSON.stringify(settings));
@@ -1396,6 +1533,8 @@
         metronomeBpm: readNumber(els.metronomeBpm, 60),
         alarmEnabled: els.alarmEnabled.value === "true",
         alarmVolume: readNumber(els.alarmVolume, 70),
+        challengeTextEnabled: state.challengeTextEnabled,
+        pauseAfterRounds: state.pauseAfterRounds,
         modes: readModes()
       };
     }
@@ -1411,6 +1550,8 @@
       if (config.metronomeBpm) els.metronomeBpm.value = config.metronomeBpm;
       if (typeof config.alarmEnabled === "boolean") els.alarmEnabled.value = String(config.alarmEnabled);
       if (Number.isFinite(Number(config.alarmVolume))) els.alarmVolume.value = config.alarmVolume;
+      state.challengeTextEnabled = config.challengeTextEnabled === true;
+      state.pauseAfterRounds = Array.isArray(config.pauseAfterRounds) ? config.pauseAfterRounds : null;
       renderModes(Array.isArray(config.modes) && config.modes.length ? config.modes : defaultModes);
       reset();
     }
@@ -1461,6 +1602,8 @@
         if (settings.metronomeBpm) els.metronomeBpm.value = settings.metronomeBpm;
         if (typeof settings.alarmEnabled === "boolean") els.alarmEnabled.value = String(settings.alarmEnabled);
         if (Number.isFinite(Number(settings.alarmVolume))) els.alarmVolume.value = settings.alarmVolume;
+        state.challengeTextEnabled = settings.challengeTextEnabled === true;
+        state.pauseAfterRounds = Array.isArray(settings.pauseAfterRounds) ? settings.pauseAfterRounds : null;
         const storedModes = Array.isArray(settings.modes) && settings.modes.length ? settings.modes : defaultModes;
         renderModes(migrateLegacyDefaultModes(storedModes));
       } catch {
@@ -1523,6 +1666,7 @@
 
     function suggestedBpmForName(name) {
       const keyword = String(name || "").trim().toLowerCase().replace(/[_-]+/g, " ");
+      if (/ultra\s*speed/.test(keyword)) return 240;
       if (/super\s*(speed|speen)/.test(keyword)) return 210;
       if (/super\s*fast/.test(keyword)) return 160;
       if (/speed|speen/.test(keyword)) return 180;
@@ -1554,7 +1698,8 @@
       els.phase.classList.toggle("rest", isRest);
       els.progress.classList.toggle("rest", isRest);
       els.clock.textContent = format(state.remaining);
-      els.dialLabel.textContent = isRest ? (els.restLabel.value.trim() || "Pause") : activeLabel();
+      els.dialLabel.textContent = isRest ? (els.restLabel.value.trim() || "Pause") : activeModeName();
+      els.challengeCopy.textContent = currentChallengeMessage();
       els.activeFooterLabel.textContent = activeLabel();
       els.activeFooterTime.textContent = format(currentActiveSeconds());
       els.restFooterTime.textContent = format(restSeconds());
@@ -1588,6 +1733,9 @@
       state.remaining = 0;
       els.status.textContent = "FERTIG";
       updateDisplay();
+      if (state.challengeTextEnabled) {
+        els.challengeCopy.textContent = "Geschafft. Gar nicht schlecht. Vielleicht habe ich dich unterschätzt.";
+      }
     }
 
     function nextPhase() {
@@ -1597,7 +1745,11 @@
           return;
         }
 
-        if (state.currentRound % pauseEveryRounds() === 0) {
+        const usePresetPauses = Array.isArray(state.pauseAfterRounds);
+        const shouldPause = usePresetPauses
+          ? state.pauseAfterRounds.includes(state.currentRound)
+          : state.currentRound % pauseEveryRounds() === 0;
+        if (shouldPause) {
           setPhase("rest");
           return;
         }
@@ -1630,6 +1782,11 @@
       if (state.running) return;
       try { audioContext(); } catch { /* Timer remains usable without audio. */ }
       saveSettings();
+      if (state.playAssistantVoiceOnStart) {
+        state.playAssistantVoiceOnStart = false;
+        els.assistantVoice.currentTime = 0;
+        els.assistantVoice.play().catch(() => {});
+      }
       state.running = true;
       state.lastTick = Date.now();
       state.timerId = window.setInterval(tick, 250);
@@ -1762,13 +1919,18 @@
 
     els.activeMinutes.addEventListener("change", applyStandardActiveTime);
     els.activeSeconds.addEventListener("change", applyStandardActiveTime);
+    els.pauseEvery.addEventListener("change", () => {
+      state.pauseAfterRounds = null;
+    });
 
     els.addMode.addEventListener("click", () => {
+      state.pauseAfterRounds = null;
       addModeRow("Normal", 5, 0);
       reset();
     });
 
     els.resetModes.addEventListener("click", () => {
+      state.pauseAfterRounds = null;
       renderModes(defaultModes);
       reset();
     });
@@ -1916,6 +2078,7 @@
 
     document.querySelectorAll("[data-preset]").forEach((button) => {
       button.addEventListener("click", () => {
+        state.pauseAfterRounds = null;
         const [active, rest, rounds] = button.dataset.preset.split(",");
         renderModes([
           ...defaultModes.map((mode) => ({ ...mode, minutes: Number(active) || 20, seconds: 0 }))
@@ -1924,6 +2087,19 @@
         els.restSecondsInput.value = 0;
         reset();
       });
+    });
+
+    els.challengePreset.addEventListener("click", () => {
+      renderModes(buildTestOneModes());
+      els.restMinutes.value = 0;
+      els.restSecondsInput.value = 20;
+      els.pauseEvery.value = 13;
+      els.metronomeEnabled.value = "true";
+      state.pauseAfterRounds = [13, 26, 39, 52, 65];
+      state.challengeTextEnabled = true;
+      state.playAssistantVoiceOnStart = true;
+      reset();
+      els.assistantVoiceStatus.textContent = "Test 1 geladen. Die Stimme startet einmal beim Start.";
     });
 
     window.addEventListener("beforeinstallprompt", (event) => {
