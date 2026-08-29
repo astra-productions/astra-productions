@@ -795,6 +795,8 @@
 
     .dial {
       --dial-progress: 100%;
+      --marker-x: 83.74%;
+      --marker-y: 9.78%;
       position: relative;
       display: grid;
       place-items: center;
@@ -812,7 +814,7 @@
       inset: -12px;
       border-radius: inherit;
       background: conic-gradient(
-        from -40deg,
+        from 40deg,
         #ff66c9 0%,
         #b86dff calc(var(--dial-progress) * 0.42),
         #72e7ff calc(var(--dial-progress) * 0.72),
@@ -828,10 +830,11 @@
     .dial::after {
       content: "";
       position: absolute;
-      right: 18px;
-      top: 20px;
+      left: var(--marker-x);
+      top: var(--marker-y);
       width: 22px;
       height: 22px;
+      transform: translate(-50%, -50%);
       border-radius: 50%;
       background: linear-gradient(135deg, #ff8ce0, #c16cff);
       box-shadow: 0 0 20px rgba(255, 130, 224, 0.8);
@@ -1863,6 +1866,10 @@
       const percent = Math.min(100, Math.max(0, done * 100));
       const remainingPercent = Math.min(100, Math.max(0, 100 - percent));
       els.dial.style.setProperty("--dial-progress", `${remainingPercent}%`);
+      const markerAngle = (40 + remainingPercent * 3.6) * Math.PI / 180;
+      const markerRadius = 52.5;
+      els.dial.style.setProperty("--marker-x", `${50 + Math.sin(markerAngle) * markerRadius}%`);
+      els.dial.style.setProperty("--marker-y", `${50 - Math.cos(markerAngle) * markerRadius}%`);
       els.bar.style.width = `${percent}%`;
       els.progress.setAttribute("aria-valuenow", Math.round(percent).toString());
     }
