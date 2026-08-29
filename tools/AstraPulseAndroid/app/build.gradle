@@ -2,6 +2,11 @@ plugins {
     id "com.android.application"
 }
 
+configurations.configureEach {
+    exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-jdk7"
+    exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-jdk8"
+}
+
 android {
     namespace "de.astra.pulse"
     compileSdk 35
@@ -10,8 +15,8 @@ android {
         applicationId "de.astra.pulse"
         minSdk 23
         targetSdk 35
-        versionCode 10
-        versionName "1.9"
+        versionCode 11
+        versionName "2.0"
     }
 
     buildFeatures {
@@ -21,4 +26,5 @@ android {
 
 dependencies {
     implementation "androidx.core:core:1.13.1"
+    implementation "androidx.biometric:biometric:1.1.0"
 }

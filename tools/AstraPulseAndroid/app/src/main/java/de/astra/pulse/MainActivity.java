@@ -1,6 +1,5 @@
 package de.astra.pulse;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
@@ -11,7 +10,11 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.Toast;
 
+import androidx.biometric.BiometricManager;
+import androidx.biometric.BiometricPrompt;
 import androidx.core.content.FileProvider;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.FragmentActivity;
 
 import org.json.JSONObject;
 
@@ -23,7 +26,7 @@ import java.net.URL;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class MainActivity extends Activity {
+public class MainActivity extends FragmentActivity {
     private WebView webView;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -39,8 +42,10 @@ public class MainActivity extends Activity {
         settings.setDomStorageEnabled(true);
         settings.setAllowFileAccess(true);
         settings.setMediaPlaybackRequiresUserGesture(false);
+        webView.setImportantForAutofill(WebView.IMPORTANT_FOR_AUTOFILL_YES);
 
         webView.addJavascriptInterface(new UpdateBridge(), "AstraUpdater");
+        webView.addJavascriptInterface(new BiometricBridge(), "AstraBiometric");
         webView.loadUrl("file:///android_asset/IntervallTimer.html");
     }
 
@@ -69,6 +74,47 @@ public class MainActivity extends Activity {
 
     private String quote(String value) {
         return JSONObject.quote(value == null ? "" : value);
+    }
+
+    public class BiometricBridge {
+        @JavascriptInterface
+        public boolean isAvailable() {
+            BiometricManager manager = BiometricManager.from(MainActivity.this);
+            return manager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG
+                    | BiometricManager.Authenticators.BIOMETRIC_WEAK) == BiometricManager.BIOMETRIC_SUCCESS;
+        }
+
+        @JavascriptInterface
+        public void authenticate() {
+            runOnUiThread(() -> {
+                BiometricPrompt prompt = new BiometricPrompt(
+                        MainActivity.this,
+                        ContextCompat.getMainExecutor(MainActivity.this),
+                        new BiometricPrompt.AuthenticationCallback() {
+                            @Override
+                            public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) {
+                                super.onAuthenticationSucceeded(result);
+                                runJs("window.astraBiometricResult({ok:true});");
+                            }
+
+                            @Override
+                            public void onAuthenticationError(int errorCode, CharSequence errorMessage) {
+                                super.onAuthenticationError(errorCode, errorMessage);
+                                if (errorCode == BiometricPrompt.ERROR_USER_CANCELED
+                                        || errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON) return;
+                                runJs("window.astraBiometricResult({ok:false,error:"
+                                        + quote(errorMessage.toString()) + "});");
+                            }
+                        }
+                );
+                BiometricPrompt.PromptInfo info = new BiometricPrompt.PromptInfo.Builder()
+                        .setTitle("Astra Pulse entsperren")
+                        .setSubtitle("Mit Fingerabdruck oder Gerätebiometrie bestätigen")
+                        .setNegativeButtonText("Passwort verwenden")
+                        .build();
+                prompt.authenticate(info);
+            });
+        }
     }
 
     private String readText(String sourceUrl) throws Exception {

@@ -1169,8 +1169,17 @@
     .auth-card h1 { margin: 0; text-align: center; font-size: 1.35rem; }
     .auth-copy { margin: 8px 0 18px; color: var(--muted); font-size: 0.86rem; line-height: 1.45; text-align: center; }
     .auth-card form { display: grid; gap: 12px; }
+    .biometric-button {
+      display: none;
+      width: 100%;
+      margin-top: 10px;
+      border-color: #70e7ff;
+      box-shadow: 0 0 18px rgba(79, 222, 255, 0.28);
+    }
+    .biometric-button.show { display: block; }
     .auth-error { min-height: 20px; margin: 0; color: #ff899b; font-size: 0.82rem; text-align: center; }
     .auth-privacy { margin: 14px 0 0; color: #d5b9d0; font-size: 0.76rem; line-height: 1.4; text-align: center; }
+    .update-panel { display: none !important; }
 
     .voice-actions {
       display: grid;
@@ -1274,6 +1283,7 @@
         <p class="auth-error" id="authError" role="alert"></p>
         <button class="primary" id="authSubmit" type="submit">LOKALES PROFIL ERSTELLEN</button>
       </form>
+      <button class="biometric-button" id="authBiometric" type="button">MIT FINGERABDRUCK ENTSPERREN</button>
       <p class="auth-privacy">Keine Cloud, kein Konto bei Astra und keine Übertragung. Die Zugangsdaten bleiben ausschließlich lokal auf diesem Gerät.</p>
     </div>
   </section>
@@ -1284,7 +1294,7 @@
           <div class="logo" aria-hidden="true"><span>A</span></div>
           <div>
             <h1>Astra Pulse</h1>
-            <div class="subtitle">Version 1.7 · Lokal. Werbefrei. Offline bereit.</div>
+            <div class="subtitle">Version 2.0 · Lokal. Werbefrei. Offline bereit.</div>
           </div>
         </div>
         <div class="pill" id="status">BEREIT</div>
@@ -1515,7 +1525,7 @@
       <p class="voice-status" id="assistantVoiceStatus" role="status">Bereit zum Abspielen.</p>
     </section>
 
-    <section class="archive card">
+    <section class="archive card update-panel" aria-hidden="true">
       <div class="archive-head">
         <h2>Updates</h2>
         <div class="version" id="appVersion">Version wird geladen</div>
@@ -1636,6 +1646,7 @@
       authConfirmWrap: document.getElementById("authConfirmWrap"),
       authError: document.getElementById("authError"),
       authSubmit: document.getElementById("authSubmit"),
+      authBiometric: document.getElementById("authBiometric"),
       profileUsername: document.getElementById("profileUsername"),
       profileActiveMode: document.getElementById("profileActiveMode"),
       profileModeType: document.getElementById("profileModeType"),
@@ -1711,9 +1722,23 @@
       els.authPassword.value = "";
       els.authPasswordConfirm.value = "";
       els.authError.textContent = "";
+      const biometricAvailable = !setup
+        && typeof window.AstraBiometric !== "undefined"
+        && window.AstraBiometric.isAvailable();
+      els.authBiometric.classList.toggle("show", biometricAvailable);
       els.authGate.hidden = false;
       window.setTimeout(() => (setup ? els.authUsername : els.authPassword).focus(), 80);
     }
+
+    window.astraBiometricResult = function(result) {
+      if (result?.ok) {
+        els.authGate.hidden = true;
+        els.authError.textContent = "";
+        updateLocalProfileView();
+        return;
+      }
+      if (result?.error) els.authError.textContent = result.error;
+    };
 
     async function submitLocalAuth(event) {
       event.preventDefault();
@@ -2478,6 +2503,10 @@
     els.closeMenu.addEventListener("click", closeMenu);
     els.menuBackdrop.addEventListener("click", closeMenu);
     els.authForm.addEventListener("submit", submitLocalAuth);
+    els.authBiometric.addEventListener("click", () => {
+      els.authError.textContent = "";
+      if (typeof window.AstraBiometric !== "undefined") window.AstraBiometric.authenticate();
+    });
     els.lockApp.addEventListener("click", showLocalAuth);
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") closeMenu();
