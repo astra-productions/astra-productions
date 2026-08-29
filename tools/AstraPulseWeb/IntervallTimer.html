@@ -794,6 +794,7 @@
     }
 
     .dial {
+      --dial-progress: 100%;
       position: relative;
       display: grid;
       place-items: center;
@@ -810,7 +811,15 @@
       position: absolute;
       inset: -12px;
       border-radius: inherit;
-      background: conic-gradient(from -40deg, #ff66c9, #b86dff 42%, #72e7ff 72%, #ff66c9 100%);
+      background: conic-gradient(
+        from -40deg,
+        #ff66c9 0%,
+        #b86dff calc(var(--dial-progress) * 0.42),
+        #72e7ff calc(var(--dial-progress) * 0.72),
+        #ff66c9 var(--dial-progress),
+        rgba(255, 102, 201, 0.08) var(--dial-progress),
+        rgba(255, 102, 201, 0.08) 100%
+      );
       -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 14px), #000 calc(100% - 13px));
       mask: radial-gradient(farthest-side, transparent calc(100% - 14px), #000 calc(100% - 13px));
       filter: drop-shadow(0 0 12px rgba(255, 102, 201, 0.62));
@@ -876,6 +885,13 @@
       border-top: 1px solid rgba(255, 255, 255, 0.08);
     }
 
+    .timer-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+    }
+
     .timer-footer span:not(.play-glyph) {
       display: grid;
       gap: 2px;
@@ -921,19 +937,15 @@
     }
 
     .timer-card .progress {
-      position: relative;
-      z-index: 1;
-      height: 10px;
-      margin-top: 22px;
-      background: rgba(0, 0, 0, 0.64);
+      display: none;
     }
 
     .session-reset {
-      display: none;
+      display: grid;
       place-items: center;
-      width: 48px;
-      height: 48px;
-      margin: 14px auto 0;
+      width: 44px;
+      height: 44px;
+      margin: 0;
       padding: 0;
       border-radius: 50%;
       border: 1px solid rgba(255, 112, 219, 0.58);
@@ -942,8 +954,6 @@
       font-size: 1.45rem;
       cursor: pointer;
     }
-
-    .session-reset.show { display: grid; }
 
     .controls {
       display: none;
@@ -1070,6 +1080,7 @@
       .challenge-copy { min-height: 48px; margin-top: 0; font-size: 0.84rem; }
       .timer-footer { margin-top: 8px; padding-top: 10px; }
       .play-glyph { width: 62px; height: 62px; }
+      .session-reset { width: 40px; height: 40px; font-size: 1.2rem; }
       .timer-card .progress { margin-top: 12px; }
       .controls { grid-template-columns: 1fr; }
       .app-menu {
@@ -1148,11 +1159,13 @@
       <p class="challenge-copy" id="challengeCopy"></p>
       <div class="timer-footer">
         <span><b id="restFooterTime">10:00</b><small>Pause</small></span>
-        <button class="play-glyph" id="timerPlay" type="button" aria-label="Timer starten">▶</button>
+        <div class="timer-actions">
+          <button class="play-glyph" id="timerPlay" type="button" aria-label="Timer starten">▶</button>
+          <button class="session-reset" id="sessionReset" type="button" aria-label="Session zurücksetzen" title="Session zurücksetzen">↺</button>
+        </div>
         <span><b id="activeFooterTime">20:00</b><small id="activeFooterLabel">Arbeit</small></span>
       </div>
       <div class="progress" id="progress" role="slider" aria-label="Fortschritt der aktuellen Phase" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0"><div class="bar" id="bar"></div></div>
-      <button class="session-reset" id="sessionReset" type="button" aria-label="Session zurücksetzen" title="Session zurücksetzen">↺</button>
     </section>
 
     <section class="controls">
@@ -1338,6 +1351,7 @@
       phase: document.getElementById("phase"),
       clock: document.getElementById("clock"),
       dialLabel: document.getElementById("dialLabel"),
+      dial: document.querySelector(".dial"),
       challengeCopy: document.getElementById("challengeCopy"),
       activeFooterLabel: document.getElementById("activeFooterLabel"),
       activeFooterTime: document.getElementById("activeFooterTime"),
@@ -1832,9 +1846,10 @@
       els.timerPlay.textContent = state.running ? "Ⅱ" : "▶";
       els.timerPlay.setAttribute("aria-label", state.running ? "Timer pausieren" : "Timer starten");
       els.timerPlay.disabled = state.finished;
-      els.sessionReset.classList.toggle("show", state.finished);
       const done = state.phaseTotal > 0 ? 1 - (state.remaining / state.phaseTotal) : 0;
       const percent = Math.min(100, Math.max(0, done * 100));
+      const remainingPercent = Math.min(100, Math.max(0, 100 - percent));
+      els.dial.style.setProperty("--dial-progress", `${remainingPercent}%`);
       els.bar.style.width = `${percent}%`;
       els.progress.setAttribute("aria-valuenow", Math.round(percent).toString());
     }
