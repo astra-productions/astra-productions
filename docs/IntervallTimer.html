@@ -1002,14 +1002,32 @@
     }
 
     @media (max-width: 680px) {
-      body { padding: max(13px, env(safe-area-inset-top)) 8px max(13px, env(safe-area-inset-bottom)); }
-      .app { gap: 12px; padding-top: 0; }
+      html, body { width: 100%; height: 100%; overflow-x: hidden; }
+      body { padding: 0; }
+      .app { width: 100%; gap: 0; padding: 0; }
       .brand-row { align-items: flex-start; }
       .poster-title { font-size: clamp(3.1rem, 18vw, 5.2rem); }
       .poster-sub { letter-spacing: 0.16em; }
       .topbar.poster-hero { min-height: 330px; border-radius: 26px; }
-      .timer-card { width: min(390px, 100%); min-height: calc(100dvh - 26px); border-radius: 34px; }
-      .dial { width: 210px; }
+      .timer-card {
+        width: 100%;
+        height: 100dvh;
+        min-height: 0;
+        padding: max(16px, env(safe-area-inset-top)) 18px max(14px, env(safe-area-inset-bottom));
+        border-left: 0;
+        border-right: 0;
+        border-radius: 0;
+      }
+      .timer-card::before { inset: 8px; border-radius: 22px; }
+      .pulse-line { margin: 5px 0 8px; }
+      .timer-card .phase-row { margin-bottom: 10px; }
+      .dial-wrap { width: min(260px, 68vw, 34dvh); margin-bottom: 8px; }
+      .dial { width: 76%; }
+      .clock { font-size: clamp(2.8rem, 12vw, 4rem); }
+      .challenge-copy { min-height: 48px; margin-top: 0; font-size: 0.84rem; }
+      .timer-footer { margin-top: 8px; padding-top: 10px; }
+      .play-glyph { width: 62px; height: 62px; }
+      .timer-card .progress { margin-top: 12px; }
       .controls { grid-template-columns: 1fr; }
     }
   </style>
@@ -1132,6 +1150,9 @@
         </label>
         <label>Tempo (BPM)
           <input id="metronomeBpm" type="number" inputmode="numeric" min="30" max="240" value="60">
+        </label>
+        <label>Metronom-Lautstärke
+          <input id="metronomeVolume" type="range" min="0" max="100" value="60">
         </label>
         <label>Ablaufalarm
           <select id="alarmEnabled">
@@ -1280,6 +1301,7 @@
       restLabel: document.getElementById("restLabel"),
       metronomeEnabled: document.getElementById("metronomeEnabled"),
       metronomeBpm: document.getElementById("metronomeBpm"),
+      metronomeVolume: document.getElementById("metronomeVolume"),
       alarmEnabled: document.getElementById("alarmEnabled"),
       alarmVolume: document.getElementById("alarmVolume"),
       modeList: document.getElementById("modeList"),
@@ -1523,6 +1545,7 @@
         restLabel: els.restLabel.value.trim() || "Pause",
         metronomeEnabled: els.metronomeEnabled.value === "true",
         metronomeBpm: readNumber(els.metronomeBpm, 60),
+        metronomeVolume: readNumber(els.metronomeVolume, 60),
         alarmEnabled: els.alarmEnabled.value === "true",
         alarmVolume: readNumber(els.alarmVolume, 70),
         challengeTextEnabled: state.challengeTextEnabled,
@@ -1556,6 +1579,7 @@
         restLabel: els.restLabel.value.trim() || "Pause",
         metronomeEnabled: els.metronomeEnabled.value === "true",
         metronomeBpm: readNumber(els.metronomeBpm, 60),
+        metronomeVolume: readNumber(els.metronomeVolume, 60),
         alarmEnabled: els.alarmEnabled.value === "true",
         alarmVolume: readNumber(els.alarmVolume, 70),
         challengeTextEnabled: state.challengeTextEnabled,
@@ -1573,6 +1597,7 @@
       if (config.restLabel) els.restLabel.value = config.restLabel;
       if (typeof config.metronomeEnabled === "boolean") els.metronomeEnabled.value = String(config.metronomeEnabled);
       if (config.metronomeBpm) els.metronomeBpm.value = config.metronomeBpm;
+      if (Number.isFinite(Number(config.metronomeVolume))) els.metronomeVolume.value = config.metronomeVolume;
       if (typeof config.alarmEnabled === "boolean") els.alarmEnabled.value = String(config.alarmEnabled);
       if (Number.isFinite(Number(config.alarmVolume))) els.alarmVolume.value = config.alarmVolume;
       state.challengeTextEnabled = config.challengeTextEnabled === true;
@@ -1625,6 +1650,7 @@
         if (settings.restLabel) els.restLabel.value = settings.restLabel;
         if (typeof settings.metronomeEnabled === "boolean") els.metronomeEnabled.value = String(settings.metronomeEnabled);
         if (settings.metronomeBpm) els.metronomeBpm.value = settings.metronomeBpm;
+        if (Number.isFinite(Number(settings.metronomeVolume))) els.metronomeVolume.value = settings.metronomeVolume;
         if (typeof settings.alarmEnabled === "boolean") els.alarmEnabled.value = String(settings.alarmEnabled);
         if (Number.isFinite(Number(settings.alarmVolume))) els.alarmVolume.value = settings.alarmVolume;
         state.challengeTextEnabled = settings.challengeTextEnabled === true;
@@ -1711,7 +1737,8 @@
       if (!state.running || state.phase !== "active" || els.metronomeEnabled.value !== "true") return;
       const bpm = currentMetronomeBpm();
       if (suggestedBpmForName(activeModeName())) els.metronomeBpm.value = bpm;
-      const beat = () => tone(1200, 0.045, 0.1);
+      const beatVolume = readNumber(els.metronomeVolume, 60) / 100 * 0.24;
+      const beat = () => tone(1200, 0.045, beatVolume);
       beat();
       state.metronomeId = window.setInterval(beat, 60000 / bpm);
     }
@@ -1932,7 +1959,7 @@
       updateDisplay();
     });
 
-    [els.restMinutes, els.restSecondsInput, els.pauseEvery, els.activeLabel, els.restLabel, els.metronomeEnabled, els.metronomeBpm, els.alarmEnabled, els.alarmVolume].forEach((input) => {
+    [els.restMinutes, els.restSecondsInput, els.pauseEvery, els.activeLabel, els.restLabel, els.metronomeEnabled, els.metronomeBpm, els.metronomeVolume, els.alarmEnabled, els.alarmVolume].forEach((input) => {
       input.addEventListener("change", reset);
     });
 
