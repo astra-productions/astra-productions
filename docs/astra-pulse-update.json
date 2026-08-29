@@ -1,6 +1,6 @@
 {
-  "versionCode": 9,
-  "versionName": "1.8",
-  "apkUrl": "https://astra-productions.github.io/astra-productions/downloads/AstraPulse-1.8.apk",
-  "notes": "Menüschaltflächen repariert und Profilansicht vom Einstellungsmenü getrennt."
+  "versionCode": 10,
+  "versionName": "1.9",
+  "apkUrl": "https://astra-productions.github.io/astra-productions/downloads/AstraPulse-1.9.apk",
+  "notes": "Neue Modus-Infokarte, Stimmenautomatik für eigene Abläufe und stabil runder Resetknopf."
 }

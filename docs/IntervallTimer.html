@@ -974,6 +974,10 @@
       place-items: center;
       width: 44px;
       height: 44px;
+      min-width: 44px;
+      min-height: 44px;
+      flex: 0 0 44px;
+      aspect-ratio: 1;
       margin: 0;
       padding: 0;
       border-radius: 50%;
@@ -1089,11 +1093,22 @@
       box-shadow: 0 0 14px rgba(255, 55, 204, 0.16), inset 0 0 22px rgba(134, 70, 255, 0.05);
     }
 
-    .app-menu.profile-view > section:not(.local-profile) {
+    .app-menu.profile-view > section:not(.local-profile):not(.mode-profile) {
+      display: none;
+    }
+
+    .app-menu:not(.profile-view) > .local-profile,
+    .app-menu:not(.profile-view) > .mode-profile {
       display: none;
     }
 
     .local-profile {
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+    }
+
+    .mode-profile {
       display: grid;
       gap: 12px;
       padding: 16px;
@@ -1354,6 +1369,21 @@
       <p class="local-only-note">Astra erhebt oder überträgt diese Daten nicht. Ohne deine lokale PIN oder dein Passwort kann die App nach einem Neustart nicht geöffnet werden.</p>
       <button id="lockApp" type="button">APP JETZT SPERREN</button>
     </section>
+    <section class="mode-profile card" id="modeProfile">
+      <div class="archive-head">
+        <h2>Ausgewählter Modus</h2>
+        <div class="version" id="profileModeType">Benutzerdefiniert</div>
+      </div>
+      <dl class="profile-data">
+        <dt>Name</dt><dd id="profileModeName">Eigener Ablauf</dd>
+        <dt>Runden</dt><dd id="profileModeRounds">0</dd>
+        <dt>Geschwindigkeiten</dt><dd id="profileModeSpeeds">-</dd>
+        <dt>Pausen</dt><dd id="profileModePauses">-</dd>
+        <dt>Gesamtdauer</dt><dd id="profileModeDuration">00:00</dd>
+        <dt>Stimme</dt><dd id="profileModeVoice">Automatisch passend</dd>
+        <dt>Metronom</dt><dd id="profileModeMetronome">Aus</dd>
+      </dl>
+    </section>
     <section class="settings card">
       <div class="settings-title">Timer</div>
       <div class="setting-grid">
@@ -1390,9 +1420,9 @@
       </div>
       <div class="settings-title">Audio</div>
       <div class="status-grid">
-        <label>Assistentenstimme
+        <label>Stimmenbegleitung
           <select id="challengeVoiceEnabled">
-            <option value="true">An</option>
+            <option value="true">Automatisch passend</option>
             <option value="false">Aus</option>
           </select>
         </label>
@@ -1527,7 +1557,9 @@
       pauseAfterRounds: null,
       challengeTextEnabled: false,
       challengeVoiceEnabled: true,
-      activePreset: "Eigener Ablauf"
+      activePreset: "Eigener Ablauf",
+      flowName: "Eigener Ablauf",
+      flowType: "custom"
     };
 
     const els = {
@@ -1606,6 +1638,14 @@
       authSubmit: document.getElementById("authSubmit"),
       profileUsername: document.getElementById("profileUsername"),
       profileActiveMode: document.getElementById("profileActiveMode"),
+      profileModeType: document.getElementById("profileModeType"),
+      profileModeName: document.getElementById("profileModeName"),
+      profileModeRounds: document.getElementById("profileModeRounds"),
+      profileModeSpeeds: document.getElementById("profileModeSpeeds"),
+      profileModePauses: document.getElementById("profileModePauses"),
+      profileModeDuration: document.getElementById("profileModeDuration"),
+      profileModeVoice: document.getElementById("profileModeVoice"),
+      profileModeMetronome: document.getElementById("profileModeMetronome"),
       profileCreated: document.getElementById("profileCreated"),
       localProfile: document.getElementById("localProfile"),
       lockApp: document.getElementById("lockApp")
@@ -1821,7 +1861,7 @@
     }
 
     async function playChallengeVoiceClip() {
-      if (!state.challengeTextEnabled || !state.challengeVoiceEnabled) return;
+      if (!state.challengeVoiceEnabled) return;
       const clips = challengeVoiceClips[challengeGroupKey()];
       if (!clips || !clips.length) return;
       const [startAt, endAt] = clips[(state.currentRound - 1) % clips.length];
@@ -1963,10 +2003,12 @@
       row.querySelectorAll("input").forEach((input) => {
         input.addEventListener("change", () => {
           state.pauseAfterRounds = null;
+          markCustomFlow();
           reset();
         });
       });
       row.querySelector("button").addEventListener("click", () => {
+        markCustomFlow();
         if (els.modeList.querySelectorAll(".mode-row").length <= 1) {
           renderModes([{ name: "Normal", minutes: 20, seconds: 0 }]);
         } else {
@@ -2004,6 +2046,8 @@
         alarmVolume: readNumber(els.alarmVolume, 70),
         challengeTextEnabled: state.challengeTextEnabled,
         challengeVoiceEnabled: state.challengeVoiceEnabled,
+        flowName: state.flowName,
+        flowType: state.flowType,
         pauseAfterRounds: state.pauseAfterRounds,
         modes: readModes()
       };
@@ -2039,6 +2083,8 @@
         alarmVolume: readNumber(els.alarmVolume, 70),
         challengeTextEnabled: state.challengeTextEnabled,
         challengeVoiceEnabled: state.challengeVoiceEnabled,
+        flowName: state.flowName,
+        flowType: state.flowType,
         pauseAfterRounds: state.pauseAfterRounds,
         modes: readModes()
       };
@@ -2059,6 +2105,8 @@
       state.challengeTextEnabled = config.challengeTextEnabled === true;
       state.challengeVoiceEnabled = config.challengeVoiceEnabled !== false;
       els.challengeVoiceEnabled.value = String(state.challengeVoiceEnabled);
+      state.flowName = config.flowName || "Eigener Ablauf";
+      state.flowType = config.flowType || "custom";
       state.pauseAfterRounds = Array.isArray(config.pauseAfterRounds) ? config.pauseAfterRounds : null;
       renderModes(Array.isArray(config.modes) && config.modes.length ? config.modes : defaultModes);
       reset();
@@ -2114,6 +2162,8 @@
         state.challengeTextEnabled = settings.challengeTextEnabled === true;
         state.challengeVoiceEnabled = settings.challengeVoiceEnabled !== false;
         els.challengeVoiceEnabled.value = String(state.challengeVoiceEnabled);
+        state.flowName = settings.flowName || "Eigener Ablauf";
+        state.flowType = settings.flowType || "custom";
         state.pauseAfterRounds = Array.isArray(settings.pauseAfterRounds) ? settings.pauseAfterRounds : null;
         const storedModes = Array.isArray(settings.modes) && settings.modes.length ? settings.modes : defaultModes;
         renderModes(migrateLegacyDefaultModes(storedModes));
@@ -2137,6 +2187,11 @@
       }
       if (state.audioContext.state === "suspended") state.audioContext.resume();
       return state.audioContext;
+    }
+
+    function markCustomFlow(name = "") {
+      state.flowType = "custom";
+      state.flowName = name || els.areaName.value.trim() || "Eigener Ablauf";
     }
 
     function tone(frequency, duration = 0.06, volume = 0.12, delay = 0) {
@@ -2350,12 +2405,41 @@
       state.running ? stop() : start();
     });
     els.sessionReset.addEventListener("click", reset);
+    function formatSummaryDuration(totalSeconds) {
+      const seconds = Math.max(0, Math.round(totalSeconds));
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      const rest = seconds % 60;
+      return hours > 0
+        ? `${hours}:${String(minutes).padStart(2, "0")}:${String(rest).padStart(2, "0")}`
+        : `${String(minutes).padStart(2, "0")}:${String(rest).padStart(2, "0")}`;
+    }
+
+    function updateModeProfile() {
+      const modes = readModes();
+      const speeds = [...new Set(modes.map((mode) => mode.name || "Status"))];
+      const pauseSeconds = restSeconds();
+      const pauseCount = Array.isArray(state.pauseAfterRounds)
+        ? state.pauseAfterRounds.filter((round) => round < modes.length).length
+        : Math.floor(Math.max(0, modes.length - 1) / Math.max(1, pauseEveryRounds()));
+      const activeSeconds = modes.reduce((sum, mode) => sum + (Number(mode.minutes) || 0) * 60 + (Number(mode.seconds) || 0), 0);
+      els.profileModeType.textContent = state.flowType === "challenge" ? "Challenge" : "Benutzerdefiniert";
+      els.profileModeName.textContent = state.flowName || "Eigener Ablauf";
+      els.profileModeRounds.textContent = String(modes.length);
+      els.profileModeSpeeds.textContent = speeds.join(", ");
+      els.profileModePauses.textContent = pauseCount ? `${pauseCount} × ${formatSummaryDuration(pauseSeconds)}` : "Keine";
+      els.profileModeDuration.textContent = formatSummaryDuration(activeSeconds + pauseCount * pauseSeconds);
+      els.profileModeVoice.textContent = state.challengeVoiceEnabled ? "Automatisch passend" : "Aus";
+      els.profileModeMetronome.textContent = els.metronomeEnabled.value === "true" ? "Automatisch nach Tempo" : "Aus";
+    }
+
     function openMenu(view = "menu") {
       const profileView = view === "profile";
       els.appMenu.classList.toggle("profile-view", profileView);
       els.menuTitle.textContent = profileView ? "Astra Pulse Profil" : "Astra Pulse Menü";
       const activeMode = currentMode();
       els.profileActiveMode.textContent = state.phase === "rest" ? "Pause" : (activeMode?.name || "Eigener Ablauf");
+      updateModeProfile();
       document.body.classList.add("menu-open");
       els.appMenu.setAttribute("aria-hidden", "false");
       els.appMenu.scrollTo({ top: 0, behavior: "auto" });
@@ -2443,7 +2527,7 @@
       state.challengeVoiceEnabled = els.challengeVoiceEnabled.value === "true";
       if (!state.challengeVoiceEnabled) {
         stopChallengeVoiceClip();
-      } else if (state.running && state.challengeTextEnabled) {
+      } else if (state.running) {
         playChallengeVoiceClip();
       }
       saveSettings();
@@ -2470,12 +2554,14 @@
 
     els.addMode.addEventListener("click", () => {
       state.pauseAfterRounds = null;
+      markCustomFlow();
       addModeRow("Normal", 5, 0);
       reset();
     });
 
     els.resetModes.addEventListener("click", () => {
       state.pauseAfterRounds = null;
+      markCustomFlow();
       renderModes(defaultModes);
       reset();
     });
@@ -2506,6 +2592,8 @@
         : [...areas, nextArea];
       writeAreas(nextAreas);
       els.areaSelect.value = id;
+      markCustomFlow(name);
+      saveSettings();
     });
 
     els.loadArea.addEventListener("click", () => {
@@ -2513,6 +2601,9 @@
       if (!area) return;
       fillAreaForm(area);
       applyConfig(area.config);
+      state.flowName = area.name;
+      state.flowType = "custom";
+      saveSettings();
     });
 
     els.deleteArea.addEventListener("click", () => {
@@ -2624,6 +2715,7 @@
     document.querySelectorAll("[data-preset]").forEach((button) => {
       button.addEventListener("click", () => {
         state.activePreset = "Eigener Ablauf";
+        markCustomFlow();
         state.pauseAfterRounds = null;
         state.challengeTextEnabled = false;
         const [active, rest, rounds] = button.dataset.preset.split(",");
@@ -2638,6 +2730,8 @@
 
     els.challengePreset.addEventListener("click", () => {
       state.activePreset = "Challenge 1";
+      state.flowName = "Challenge 1";
+      state.flowType = "challenge";
       renderModes(buildChallengeOneModes());
       els.restMinutes.value = 0;
       els.restSecondsInput.value = 20;
@@ -2652,6 +2746,8 @@
 
     els.challengeTwoPreset.addEventListener("click", () => {
       state.activePreset = "Challenge 2";
+      state.flowName = "Challenge 2";
+      state.flowType = "challenge";
       renderModes(buildChallengeTwoModes());
       els.restMinutes.value = 0;
       els.restSecondsInput.value = 20;
