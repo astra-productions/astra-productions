@@ -1,4 +1,4 @@
-const CACHE_NAME = "astra-pulse-web-v17";
+const CACHE_NAME = "astra-pulse-web-v18";
 const ASSETS = [
   "./",
   "index.html",

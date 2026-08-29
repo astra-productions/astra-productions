@@ -9,7 +9,7 @@
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:roundIcon="@drawable/ic_launcher"
-        android:label="Astra Pulse"
+        android:label="Astra Pulse App"
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="false">
         <provider

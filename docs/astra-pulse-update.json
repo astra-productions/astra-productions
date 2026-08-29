@@ -1,6 +1,6 @@
 {
-  "versionCode": 15,
-  "versionName": "2.4",
-  "apkUrl": "https://astra-productions.github.io/astra-productions/downloads/AstraPulse-2.4.apk",
-  "notes": "Fingerabdruckknopf verwendet immer direkt den nativen Android-Biometrieweg."
+  "versionCode": 16,
+  "versionName": "2.5",
+  "apkUrl": "https://astra-productions.github.io/astra-productions/downloads/AstraPulse-2.5.apk",
+  "notes": "Neues unverwechselbares Astra-Pulse-Neonicon und Launchername Astra Pulse App."
 }
