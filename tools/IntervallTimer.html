@@ -404,6 +404,46 @@
       font-size: 0.78rem;
     }
 
+    .mode-editor {
+      border-top: 1px solid rgba(255, 103, 202, 0.24);
+      border-bottom: 1px solid rgba(255, 103, 202, 0.24);
+      padding: 4px 0 12px;
+    }
+
+    .settings-title {
+      margin: 4px 0 0;
+      color: #ff9cdc;
+      font-size: 0.76rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .mode-editor summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 52px;
+      color: #fff1fa;
+      font-weight: 850;
+      cursor: pointer;
+      list-style: none;
+    }
+
+    .mode-editor summary::-webkit-details-marker { display: none; }
+
+    .mode-count {
+      min-width: 40px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: rgba(255, 103, 202, 0.14);
+      border: 1px solid rgba(255, 103, 202, 0.34);
+      color: #ff9cdc;
+      font-size: 0.75rem;
+      text-align: center;
+    }
+
     .quick button {
       min-height: 42px;
       font-size: 0.78rem;
@@ -942,7 +982,10 @@
       box-shadow: 24px 0 60px rgba(0, 0, 0, 0.64);
       transform: translateX(-104%);
       transition: transform 240ms ease;
+      scrollbar-width: none;
     }
+
+    .app-menu::-webkit-scrollbar { display: none; }
 
     .menu-open .menu-backdrop {
       opacity: 1;
@@ -1014,11 +1057,11 @@
         height: 100dvh;
         min-height: 0;
         padding: max(16px, env(safe-area-inset-top)) 18px max(14px, env(safe-area-inset-bottom));
-        border-left: 0;
-        border-right: 0;
+        border: 0;
         border-radius: 0;
+        box-shadow: none;
       }
-      .timer-card::before { inset: 8px; border-radius: 22px; }
+      .timer-card::before { display: none; }
       .pulse-line { margin: 5px 0 8px; }
       .timer-card .phase-row { margin-bottom: 10px; }
       .dial-wrap { width: min(260px, 68vw, 34dvh); margin-bottom: 8px; }
@@ -1029,6 +1072,22 @@
       .play-glyph { width: 62px; height: 62px; }
       .timer-card .progress { margin-top: 12px; }
       .controls { grid-template-columns: 1fr; }
+      .app-menu {
+        width: 100vw;
+        border-right: 0;
+        padding-inline: 12px;
+      }
+      .menu-head { margin-inline: -12px; padding-inline: 16px; }
+      .settings.card, .archive.card { width: 100%; padding: 14px; }
+      .settings .setting-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+      .settings label { min-width: 0; }
+      .mode-editor[open] .mode-list { margin-top: 8px; }
+      .mode-editor .mode-row {
+        grid-template-columns: minmax(120px, 1fr) 64px 64px 46px;
+        gap: 6px;
+        padding: 8px;
+      }
+      .mode-editor .mode-row input { min-width: 0; padding-inline: 8px; }
     }
   </style>
 </head>
@@ -1108,8 +1167,9 @@
       <div class="menu-head">
         <h2>Astra Pulse Menü</h2>
         <button class="menu-close" id="closeMenu" type="button" aria-label="Menü schließen">×</button>
-      </div>
+    </div>
     <section class="settings card">
+      <div class="settings-title">Timer</div>
       <div class="setting-grid">
         <label>Aktiv (Min.)
           <input id="activeMinutes" type="number" inputmode="numeric" min="0" max="60" value="20">
@@ -1130,6 +1190,7 @@
           <input id="pauseEvery" type="number" inputmode="numeric" min="1" max="12" value="1">
         </label>
       </div>
+      <div class="settings-title">Anzeige</div>
       <div class="status-grid">
         <label>Text rechts (Aktiv)
           <input id="activeLabel" type="text" maxlength="28" value="Arbeit" placeholder="z.B. Stroke, Push, Lernen">
@@ -1141,6 +1202,7 @@
           <input id="modeHint" type="text" value="Status + Min. + Sek." disabled>
         </label>
       </div>
+      <div class="settings-title">Audio</div>
       <div class="status-grid">
         <label>Metronom
           <select id="metronomeEnabled">
@@ -1164,11 +1226,20 @@
           <input id="alarmVolume" type="range" min="0" max="100" value="70">
         </label>
       </div>
-      <div class="mode-list" id="modeList"></div>
-      <div class="mode-actions">
-        <button id="addMode" type="button">STATUS HINZUFÜGEN</button>
-        <button id="resetModes" type="button">STANDARD STATUS</button>
+      <div class="quick">
+        <button id="challengePreset" type="button" class="primary">TEST 1</button>
+        <button data-preset="20,10,3">20 / 10</button>
+        <button data-preset="15,5,3">15 / 5</button>
+        <button data-preset="10,5,4">10 / 5</button>
       </div>
+      <details class="mode-editor" id="modeEditor">
+        <summary>Passagen <span class="mode-count" id="modeCount">0</span></summary>
+        <div class="mode-list" id="modeList"></div>
+        <div class="mode-actions">
+          <button id="addMode" type="button">STATUS HINZUFÜGEN</button>
+          <button id="resetModes" type="button">STANDARD STATUS</button>
+        </div>
+      </details>
       <datalist id="statusSuggestions">
         <option value="Slow"></option>
         <option value="Normal"></option>
@@ -1182,12 +1253,6 @@
         <option value="Check"></option>
         <option value="Recovery"></option>
       </datalist>
-      <div class="quick">
-        <button id="challengePreset" type="button" class="primary">TEST 1</button>
-        <button data-preset="20,10,3">20 / 10</button>
-        <button data-preset="15,5,3">15 / 5</button>
-        <button data-preset="10,5,4">10 / 5</button>
-      </div>
     </section>
 
     <section class="archive card">
@@ -1305,6 +1370,7 @@
       alarmEnabled: document.getElementById("alarmEnabled"),
       alarmVolume: document.getElementById("alarmVolume"),
       modeList: document.getElementById("modeList"),
+      modeCount: document.getElementById("modeCount"),
       addMode: document.getElementById("addMode"),
       resetModes: document.getElementById("resetModes"),
       challengePreset: document.getElementById("challengePreset"),
@@ -1497,6 +1563,7 @@
       els.modeList.innerHTML = "";
       modes.forEach((mode) => addModeRow(mode.name, mode.minutes, mode.seconds || 0));
       els.rounds.value = readModes().length;
+      els.modeCount.textContent = readModes().length.toString();
     }
 
     function addModeRow(name = "Normal", minutes = 5, seconds = 0) {
@@ -1520,10 +1587,12 @@
         } else {
           row.remove();
         }
+        els.modeCount.textContent = readModes().length.toString();
         reset();
       });
       els.modeList.appendChild(row);
       els.rounds.value = readModes().length;
+      els.modeCount.textContent = readModes().length.toString();
     }
 
     function escapeHtml(value) {
@@ -1884,6 +1953,7 @@
     function openMenu(target) {
       document.body.classList.add("menu-open");
       els.appMenu.setAttribute("aria-hidden", "false");
+      els.appMenu.scrollTo({ top: 0, behavior: "auto" });
       if (target) window.setTimeout(() => target.scrollIntoView({ behavior: "smooth", block: "start" }), 120);
     }
 
