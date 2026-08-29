@@ -763,10 +763,11 @@
       position: relative;
       z-index: 1;
       display: flex;
+      flex-wrap: wrap;
       justify-content: center;
       align-items: center;
       gap: 10px;
-      margin: 0 0 30px;
+      margin: 0 0 22px;
     }
 
     .timer-card .phase,
@@ -788,6 +789,32 @@
       color: rgba(255, 255, 255, 0.72);
       border-color: #9a55ff;
       box-shadow: 0 0 9px rgba(135, 70, 255, 0.55), inset 0 0 18px rgba(104, 80, 255, 0.12);
+    }
+
+    .timer-card .next-phase {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      max-width: 100%;
+      margin: 0 20%;
+      padding: 7px 14px;
+      border: 1px solid #70e7ff;
+      border-radius: 999px;
+      background: rgba(76, 210, 255, 0.09);
+      color: rgba(255, 255, 255, 0.76);
+      font-size: 0.7rem;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      box-shadow: 0 0 9px rgba(74, 222, 255, 0.5), inset 0 0 18px rgba(79, 198, 255, 0.1);
+    }
+
+    .timer-card .next-phase strong {
+      color: #bff7ff;
+      font-size: 0.76rem;
+      text-shadow: 0 0 10px rgba(91, 229, 255, 0.75);
     }
 
     .dial-wrap {
@@ -1169,6 +1196,32 @@
     .auth-card h1 { margin: 0; text-align: center; font-size: 1.35rem; }
     .auth-copy { margin: 8px 0 18px; color: var(--muted); font-size: 0.86rem; line-height: 1.45; text-align: center; }
     .auth-card form { display: grid; gap: 12px; }
+    .auth-remember {
+      display: grid;
+      grid-template-columns: 22px minmax(0, 1fr);
+      align-items: start;
+      gap: 10px;
+      padding: 10px 11px;
+      border: 1px solid rgba(112, 231, 255, 0.32);
+      border-radius: 8px;
+      background: rgba(67, 194, 255, 0.06);
+      color: #ecfaff;
+      font-size: 0.82rem;
+      line-height: 1.3;
+      text-transform: none;
+      cursor: pointer;
+    }
+    .auth-remember input {
+      width: 22px;
+      height: 22px;
+      min-height: 22px;
+      margin: 1px 0 0;
+      padding: 0;
+      accent-color: #ff61db;
+      box-shadow: none;
+    }
+    .auth-remember strong { display: block; color: #fff; }
+    .auth-remember small { display: block; margin-top: 3px; color: #b9a6bb; font-weight: 600; }
     .biometric-button {
       display: none;
       width: 100%;
@@ -1268,7 +1321,7 @@
   <section class="auth-gate" id="authGate" aria-label="Lokale Anmeldung">
     <div class="auth-card">
       <div class="auth-mark">ASTRA PULSE</div>
-      <div class="version" id="authVersion">Version 2.6</div>
+      <div class="version" id="authVersion">Version 2.7</div>
       <h1 id="authTitle">Lokales Profil einrichten</h1>
       <p class="auth-copy" id="authCopy">Erstelle deine persönliche Anmeldung für dieses Gerät.</p>
       <form id="authForm">
@@ -1280,6 +1333,10 @@
         </label>
         <label class="auth-confirm" id="authConfirmWrap">PIN oder Passwort wiederholen
           <input id="authPasswordConfirm" type="password" minlength="4" maxlength="128" autocomplete="new-password">
+        </label>
+        <label class="auth-remember">
+          <input id="authRemember" type="checkbox">
+          <span><strong>Auf diesem Gerät angemeldet bleiben</strong><small>Das Passwort selbst wird nicht gespeichert.</small></span>
         </label>
         <p class="auth-error" id="authError" role="alert"></p>
         <button class="primary" id="authSubmit" type="submit">LOKALES PROFIL ERSTELLEN</button>
@@ -1295,7 +1352,7 @@
           <div class="logo" aria-hidden="true"><span>A</span></div>
           <div>
             <h1>Astra Pulse</h1>
-            <div class="subtitle">Version 2.6 · Lokal. Werbefrei. Offline bereit.</div>
+            <div class="subtitle">Version 2.7 · Lokal. Werbefrei. Offline bereit.</div>
           </div>
         </div>
         <div class="pill" id="status">BEREIT</div>
@@ -1332,6 +1389,7 @@
       <div class="phase-row">
         <div class="phase" id="phase">Aktiv</div>
         <div class="round" id="round">Runde 1 von 3</div>
+        <div class="next-phase"><span>Nächstes</span><strong id="nextPhase">Normal</strong></div>
       </div>
       <div class="dial-wrap">
         <div class="orbit orbit-a" aria-hidden="true"></div>
@@ -1377,7 +1435,7 @@
         <dt>Erstellt</dt><dd id="profileCreated">-</dd>
         <dt>Speicherung</dt><dd>Nur lokal</dd>
       </dl>
-      <p class="local-only-note">Astra erhebt oder überträgt diese Daten nicht. Ohne deine lokale PIN oder dein Passwort kann die App nach einem Neustart nicht geöffnet werden.</p>
+      <p class="local-only-note">Astra erhebt oder überträgt diese Daten nicht. Nur wenn du dieses Gerät ausdrücklich als vertraut speicherst, bleibt die App nach einem Neustart entsperrt.</p>
       <button id="lockApp" type="button">APP JETZT SPERREN</button>
     </section>
     <section class="mode-profile card" id="modeProfile">
@@ -1550,6 +1608,7 @@
     const archiveKey = "astra-pulse-areas-v1";
     const updateUrlKey = "astra-pulse-update-manifest-url";
     const localProfileKey = "astra-pulse-local-profile-v1";
+    const rememberedDeviceKey = "astra-pulse-remembered-device-v1";
     const state = {
       running: false,
       finished: false,
@@ -1576,6 +1635,7 @@
     const els = {
       status: document.getElementById("status"),
       phase: document.getElementById("phase"),
+      nextPhase: document.getElementById("nextPhase"),
       clock: document.getElementById("clock"),
       dialLabel: document.getElementById("dialLabel"),
       dial: document.querySelector(".dial"),
@@ -1645,6 +1705,7 @@
       authPassword: document.getElementById("authPassword"),
       authPasswordConfirm: document.getElementById("authPasswordConfirm"),
       authConfirmWrap: document.getElementById("authConfirmWrap"),
+      authRemember: document.getElementById("authRemember"),
       authError: document.getElementById("authError"),
       authSubmit: document.getElementById("authSubmit"),
       authBiometric: document.getElementById("authBiometric"),
@@ -1706,6 +1767,15 @@
         : "-";
     }
 
+    function rememberThisDevice() {
+      if (els.authRemember.checked) localStorage.setItem(rememberedDeviceKey, "true");
+      else localStorage.removeItem(rememberedDeviceKey);
+    }
+
+    function isRememberedDevice() {
+      return localStorage.getItem(rememberedDeviceKey) === "true";
+    }
+
     function showLocalAuth() {
       const profile = readLocalProfile();
       const setup = !profile;
@@ -1723,6 +1793,7 @@
       els.authPassword.value = "";
       els.authPasswordConfirm.value = "";
       els.authError.textContent = "";
+      els.authRemember.checked = isRememberedDevice();
       els.authBiometric.classList.toggle("show", !setup);
       els.authGate.hidden = false;
       window.setTimeout(() => (setup ? els.authUsername : els.authPassword).focus(), 80);
@@ -1730,6 +1801,7 @@
 
     window.astraBiometricResult = function(result) {
       if (result?.ok) {
+        rememberThisDevice();
         els.authGate.hidden = true;
         els.authError.textContent = "";
         updateLocalProfileView();
@@ -1778,6 +1850,7 @@
           }
         }
 
+        rememberThisDevice();
         els.authGate.hidden = true;
         els.authPassword.value = "";
         els.authPasswordConfirm.value = "";
@@ -2005,6 +2078,19 @@
     function currentActiveSeconds() {
       const mode = currentMode();
       return Math.max(1, (Number(mode.minutes) || 0) * 60 + (Number(mode.seconds) || 0));
+    }
+
+    function pausesAfterCurrentRound() {
+      if (state.phase !== "active" || state.currentRound >= maxRounds()) return false;
+      return Array.isArray(state.pauseAfterRounds)
+        ? state.pauseAfterRounds.includes(state.currentRound)
+        : state.currentRound % pauseEveryRounds() === 0;
+    }
+
+    function nextStageName() {
+      if (state.finished || state.currentRound >= maxRounds()) return "Ende";
+      if (pausesAfterCurrentRound()) return "Pause";
+      return readModes()[state.currentRound]?.name || "Ende";
     }
 
     function renderModes(modes = defaultModes) {
@@ -2295,6 +2381,7 @@
       els.activeFooterTime.textContent = format(currentActiveSeconds());
       els.restFooterTime.textContent = format(restSeconds());
       els.round.textContent = `Block ${state.currentRound} von ${maxRounds()}`;
+      els.nextPhase.textContent = nextStageName();
       els.rounds.value = maxRounds();
       els.status.textContent = state.finished ? "FERTIG" : (state.running ? "LAEUFT" : "BEREIT");
       const suggestedBpm = !isRest ? suggestedBpmForName(activeModeName()) : null;
@@ -2345,11 +2432,7 @@
           return;
         }
 
-        const usePresetPauses = Array.isArray(state.pauseAfterRounds);
-        const shouldPause = usePresetPauses
-          ? state.pauseAfterRounds.includes(state.currentRound)
-          : state.currentRound % pauseEveryRounds() === 0;
-        if (shouldPause) {
+        if (pausesAfterCurrentRound()) {
           setPhase("rest");
           return;
         }
@@ -2505,7 +2588,11 @@
       els.authError.textContent = "";
       window.location.href = "astra-pulse://biometric";
     });
-    els.lockApp.addEventListener("click", showLocalAuth);
+    els.lockApp.addEventListener("click", () => {
+      localStorage.removeItem(rememberedDeviceKey);
+      els.authRemember.checked = false;
+      showLocalAuth();
+    });
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") closeMenu();
     });
@@ -2811,7 +2898,8 @@
     loadUpdateSettings();
     reset();
     updateLocalProfileView();
-    showLocalAuth();
+    if (readLocalProfile() && isRememberedDevice()) els.authGate.hidden = true;
+    else showLocalAuth();
   </script>
 </body>
 </html>
