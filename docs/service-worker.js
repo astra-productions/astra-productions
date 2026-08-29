@@ -1,10 +1,11 @@
-const CACHE_NAME = "astra-pulse-web-v4";
+const CACHE_NAME = "astra-pulse-web-v5";
 const ASSETS = [
   "./",
   "index.html",
   "IntervallTimer.html",
   "manifest.webmanifest",
-  "intervall-icon.svg"
+  "intervall-icon.svg",
+  "astra-assistant-voice.mp3"
 ];
 
 self.addEventListener("install", (event) => {

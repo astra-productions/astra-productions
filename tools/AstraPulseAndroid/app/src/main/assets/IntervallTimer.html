@@ -1256,7 +1256,7 @@
         </label>
       </div>
       <div class="quick">
-        <button id="challengePreset" type="button" class="primary">TEST 1</button>
+        <button id="challengePreset" type="button" class="primary">CHALLENGE 1</button>
         <button data-preset="20,10,3">20 / 10</button>
         <button data-preset="15,5,3">15 / 5</button>
         <button data-preset="10,5,4">10 / 5</button>
@@ -1357,9 +1357,11 @@
       pendingUpdateApk: "",
       audioContext: null,
       metronomeId: null,
+      voiceClipTimerId: null,
       playAssistantVoiceOnStart: false,
       pauseAfterRounds: null,
-      challengeTextEnabled: false
+      challengeTextEnabled: false,
+      challengeVoiceEnabled: false
     };
 
     const els = {
@@ -1435,7 +1437,7 @@
       { name: "Super Speed", minutes: 20, seconds: 0 }
     ];
 
-    const testOnePattern = [
+    const challengeOnePattern = [
       ["Slow", 30], ["Normal", 25], ["Fast", 20], ["Slow", 25],
       ["Faster", 18], ["Normal", 20], ["Super fast", 15], ["Fast", 20],
       ["Speed", 12], ["Slow", 30], ["Super Speed", 10], ["Normal", 25],
@@ -1455,74 +1457,91 @@
       ],
       normal: [
         "So ist es besser. Schön kontrolliert bleiben.",
-        "Noch sieht das ziemlich entspannt aus.",
         "Halte den Rhythmus. Keine eigenen Regeln.",
         "Na also. Vielleicht kannst du doch zuhören."
       ],
       fast: [
         "Jetzt etwas schneller. Versuch mitzuhalten.",
-        "Nicht nachlassen. Wir sind gerade erst warm.",
-        "Du wolltest Abwechslung. Bitte sehr.",
-        "Immer noch so selbstsicher?"
-      ],
-      faster: [
-        "Mehr Tempo. Keine Ausreden.",
         "Das wird schwieriger, nicht wahr?",
-        "Konzentrier dich. Ich bin noch nicht fertig.",
-        "Zeig mir, dass du nicht nur große Worte hast."
-      ],
-      superfast: [
-        "Jetzt wird es ernst. Bleib bei mir.",
-        "Nicht schwach werden. Noch nicht.",
+        "Konzentrier dich. Ich bin noch nicht fertig mit dir.",
         "Oh, wird es etwa schon schwierig?",
-        "Weiter. Ich lasse das gelten, fürs Erste."
+        "Komm schon. Das kannst du besser.",
+        "Nicht langsamer werden. Ich merke das.",
+        "Und kommen darfst du noch nicht."
       ],
       speed: [
-        "Keine Ablenkung. Nur dieses Tempo.",
-        "Du wolltest eine Herausforderung. Da ist sie.",
-        "Komm schon. Das kannst du besser.",
-        "Nicht langsamer werden. Ich merke das."
-      ],
-      superspeed: [
-        "Jetzt kannst du zeigen, was wirklich in dir steckt.",
-        "Halte durch. Beeindruck mich wenigstens ein bisschen.",
-        "Du kannst ruhig so tun, als wäre alles unter Kontrolle.",
-        "Noch da? Gut. Dann weiter."
-      ],
-      ultraspeed: [
-        "Ultraspeed. Jetzt gibt es keine Ausreden mehr.",
-        "Na los. Überrasche mich.",
-        "Nicht nachlassen. Nicht ausgerechnet jetzt.",
+        "Du kannst ruhig so tun, als wäre alles unter Kontrolle. Aber ich weiß, du willst kommen.",
+        "Noch da? Gut, dann weiter.",
+        "Ultraspeed. Jetzt gibt es keine Ausreden mehr. Aber wehe, du kommst. Na los, überrasche mich.",
         "Das ist deine Spitze. Zeig, was du kannst."
       ],
       pause: [
-        "Stopp. Ja, ausgerechnet jetzt.",
-        "Du möchtest weitermachen? Wie schade.",
-        "Geduld. Die nächste Runde kommt früh genug.",
-        "Nur zwanzig Sekunden. Du wirst es überleben.",
+        "Stopp. Ja, ausgerechnet jetzt. Du sollst ruhig etwas zappeln. Du möchtest weitermachen? Wie schade.",
+        "Geduld. Die nächste Runde kommt früh genug. Aber du kommst nicht. Nur zwanzig Sekunden.",
+        "Atme, entspann dich. Du wirst es überleben.",
         "Ich weiß, Warten ist nicht deine Stärke."
       ]
     };
 
+    const challengeVoiceClips = {
+      slow: [[0, 4.04], [4.38, 7.24], [7.66, 10.38], [10.60, 13.62]],
+      normal: [[14.00, 17.28], [17.52, 20.84], [21.20, 24.44]],
+      fast: [[24.84, 27.70], [27.90, 29.74], [30.08, 33.58], [34.08, 36.52], [36.92, 39.48], [40.12, 42.92], [43.00, 45.50]],
+      speed: [[45.76, 51.52], [51.70, 54.58], [54.92, 61.52], [61.80, 64.84]],
+      pause: [[65.02, 73.06], [73.36, 80.14], [80.32, 83.82], [83.70, 87.32]]
+    };
+
+    function challengeGroupKey() {
+      if (state.phase === "rest") return "pause";
+      const name = activeModeName().toLowerCase().replace(/\s+/g, "");
+      if (name === "slow" || name === "normal") return name;
+      if (name === "superspeed" || name === "ultraspeed") return "speed";
+      return "fast";
+    }
+
     function currentChallengeMessage() {
       if (!state.challengeTextEnabled) return "";
-      const key = state.phase === "rest"
-        ? "pause"
-        : activeModeName().toLowerCase().replace(/\s+/g, "");
+      const key = challengeGroupKey();
       const messages = challengeMessages[key] || challengeMessages.normal;
       return messages[(state.currentRound - 1) % messages.length];
     }
 
-    function buildTestOneModes() {
+    function stopChallengeVoiceClip() {
+      if (state.voiceClipTimerId) {
+        window.clearTimeout(state.voiceClipTimerId);
+        state.voiceClipTimerId = null;
+      }
+      els.assistantVoice.pause();
+    }
+
+    async function playChallengeVoiceClip() {
+      if (!state.challengeVoiceEnabled) return;
+      const clips = challengeVoiceClips[challengeGroupKey()];
+      if (!clips || !clips.length) return;
+      const [startAt, endAt] = clips[(state.currentRound - 1) % clips.length];
+      stopChallengeVoiceClip();
+      els.assistantVoice.currentTime = startAt;
+      try {
+        await els.assistantVoice.play();
+        state.voiceClipTimerId = window.setTimeout(() => {
+          els.assistantVoice.pause();
+          state.voiceClipTimerId = null;
+        }, Math.max(100, (endAt - startAt) * 1000));
+      } catch {
+        // The timer remains usable when autoplay is unavailable.
+      }
+    }
+
+    function buildChallengeOneModes() {
       const targetSeconds = 28 * 60 + 20;
       const modes = [];
       let total = 0;
       let step = 0;
 
       while (total < targetSeconds) {
-        const cycle = Math.floor(step / testOnePattern.length);
-        const patternIndex = (step + cycle * 7) % testOnePattern.length;
-        const [name, preferredSeconds] = testOnePattern[patternIndex];
+        const cycle = Math.floor(step / challengeOnePattern.length);
+        const patternIndex = (step + cycle * 7) % challengeOnePattern.length;
+        const [name, preferredSeconds] = challengeOnePattern[patternIndex];
         const remaining = targetSeconds - total;
         let duration = Math.min(preferredSeconds, remaining);
 
@@ -1648,6 +1667,7 @@
         alarmEnabled: els.alarmEnabled.value === "true",
         alarmVolume: readNumber(els.alarmVolume, 70),
         challengeTextEnabled: state.challengeTextEnabled,
+        challengeVoiceEnabled: state.challengeVoiceEnabled,
         pauseAfterRounds: state.pauseAfterRounds,
         modes: readModes()
       };
@@ -1682,6 +1702,7 @@
         alarmEnabled: els.alarmEnabled.value === "true",
         alarmVolume: readNumber(els.alarmVolume, 70),
         challengeTextEnabled: state.challengeTextEnabled,
+        challengeVoiceEnabled: state.challengeVoiceEnabled,
         pauseAfterRounds: state.pauseAfterRounds,
         modes: readModes()
       };
@@ -1700,6 +1721,7 @@
       if (typeof config.alarmEnabled === "boolean") els.alarmEnabled.value = String(config.alarmEnabled);
       if (Number.isFinite(Number(config.alarmVolume))) els.alarmVolume.value = config.alarmVolume;
       state.challengeTextEnabled = config.challengeTextEnabled === true;
+      state.challengeVoiceEnabled = config.challengeVoiceEnabled === true;
       state.pauseAfterRounds = Array.isArray(config.pauseAfterRounds) ? config.pauseAfterRounds : null;
       renderModes(Array.isArray(config.modes) && config.modes.length ? config.modes : defaultModes);
       reset();
@@ -1753,6 +1775,7 @@
         if (typeof settings.alarmEnabled === "boolean") els.alarmEnabled.value = String(settings.alarmEnabled);
         if (Number.isFinite(Number(settings.alarmVolume))) els.alarmVolume.value = settings.alarmVolume;
         state.challengeTextEnabled = settings.challengeTextEnabled === true;
+        state.challengeVoiceEnabled = settings.challengeVoiceEnabled === true;
         state.pauseAfterRounds = Array.isArray(settings.pauseAfterRounds) ? settings.pauseAfterRounds : null;
         const storedModes = Array.isArray(settings.modes) && settings.modes.length ? settings.modes : defaultModes;
         renderModes(migrateLegacyDefaultModes(storedModes));
@@ -1884,6 +1907,7 @@
       }
       syncMetronome();
       updateDisplay();
+      if (state.running) playChallengeVoiceClip();
     }
 
     function finish() {
@@ -1943,8 +1967,7 @@
       saveSettings();
       if (state.playAssistantVoiceOnStart) {
         state.playAssistantVoiceOnStart = false;
-        els.assistantVoice.currentTime = 0;
-        els.assistantVoice.play().catch(() => {});
+        playChallengeVoiceClip();
       }
       state.running = true;
       state.lastTick = Date.now();
@@ -1961,6 +1984,7 @@
         state.timerId = null;
       }
       stopMetronome();
+      stopChallengeVoiceClip();
       updateDisplay();
     }
 
@@ -2012,7 +2036,7 @@
       }
     });
     els.stopAssistantVoice.addEventListener("click", () => {
-      els.assistantVoice.pause();
+      stopChallengeVoiceClip();
       els.assistantVoice.currentTime = 0;
       els.assistantVoiceStatus.textContent = "Wiedergabe gestoppt.";
     });
@@ -2243,6 +2267,8 @@
     document.querySelectorAll("[data-preset]").forEach((button) => {
       button.addEventListener("click", () => {
         state.pauseAfterRounds = null;
+        state.challengeTextEnabled = false;
+        state.challengeVoiceEnabled = false;
         const [active, rest, rounds] = button.dataset.preset.split(",");
         renderModes([
           ...defaultModes.map((mode) => ({ ...mode, minutes: Number(active) || 20, seconds: 0 }))
@@ -2254,16 +2280,17 @@
     });
 
     els.challengePreset.addEventListener("click", () => {
-      renderModes(buildTestOneModes());
+      renderModes(buildChallengeOneModes());
       els.restMinutes.value = 0;
       els.restSecondsInput.value = 20;
       els.pauseEvery.value = 13;
       els.metronomeEnabled.value = "true";
       state.pauseAfterRounds = [13, 26, 39, 52, 65];
       state.challengeTextEnabled = true;
+      state.challengeVoiceEnabled = true;
       state.playAssistantVoiceOnStart = true;
       reset();
-      els.assistantVoiceStatus.textContent = "Test 1 geladen. Die Stimme startet einmal beim Start.";
+      els.assistantVoiceStatus.textContent = "Challenge 1 geladen. Die Stimme begleitet die passenden Blöcke.";
     });
 
     window.addEventListener("beforeinstallprompt", (event) => {
