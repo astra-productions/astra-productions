@@ -23,6 +23,10 @@
         </provider>
 
         <activity
+            android:name=".OnlineVideoActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:exported="false" />
+        <activity
             android:name=".MainActivity"
             android:configChanges="keyboardHidden|orientation|screenSize"
             android:exported="true">

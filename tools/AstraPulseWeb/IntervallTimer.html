@@ -1247,6 +1247,63 @@
       font-size: 0.86rem;
     }
 
+    .online-video-panel {
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+    }
+
+    .online-video-panel input[type="url"] {
+      padding: 0 12px;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    .online-video-status {
+      min-height: 20px;
+      margin: 0;
+      color: #bfefff;
+      font-size: 0.8rem;
+      line-height: 1.4;
+    }
+
+    .video-source-divider {
+      height: 1px;
+      margin: 2px 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 83, 205, 0.75), transparent);
+    }
+
+    .local-video-banner {
+      display: grid;
+      grid-template-columns: 48px 1fr auto;
+      align-items: center;
+      gap: 12px;
+      min-height: 76px;
+      padding: 12px 14px;
+      border: 1px solid rgba(255, 83, 205, 0.78);
+      background: linear-gradient(120deg, rgba(255, 52, 181, 0.2), rgba(77, 214, 255, 0.1));
+      box-shadow: 0 0 20px rgba(255, 46, 190, 0.17), inset 0 0 16px rgba(255, 255, 255, 0.03);
+      color: #fff;
+      text-align: left;
+    }
+
+    .local-video-banner .video-icon {
+      display: grid;
+      width: 48px;
+      height: 48px;
+      place-items: center;
+      border-radius: 50%;
+      background: rgba(255, 65, 193, 0.16);
+      color: #ff83dc;
+      font-size: 1.35rem;
+      box-shadow: 0 0 15px rgba(255, 67, 196, 0.28);
+    }
+
+    .local-video-banner strong,
+    .local-video-banner small { display: block; }
+    .local-video-banner small { margin-top: 4px; color: var(--muted); font-size: 0.72rem; }
+    .local-video-banner .banner-arrow { color: #77ddff; font-size: 1.35rem; }
+
     @media (max-width: 680px) {
       html, body {
         width: 100%;
@@ -1321,7 +1378,7 @@
   <section class="auth-gate" id="authGate" aria-label="Lokale Anmeldung">
     <div class="auth-card">
       <div class="auth-mark">ASTRA PULSE</div>
-      <div class="version" id="authVersion">Version 2.7</div>
+      <div class="version" id="authVersion">Version 2.8</div>
       <h1 id="authTitle">Lokales Profil einrichten</h1>
       <p class="auth-copy" id="authCopy">Erstelle deine persönliche Anmeldung für dieses Gerät.</p>
       <form id="authForm">
@@ -1352,7 +1409,7 @@
           <div class="logo" aria-hidden="true"><span>A</span></div>
           <div>
             <h1>Astra Pulse</h1>
-            <div class="subtitle">Version 2.7 · Lokal. Werbefrei. Offline bereit.</div>
+            <div class="subtitle">Version 2.8 · Lokal. Werbefrei. Offline bereit.</div>
           </div>
         </div>
         <div class="pill" id="status">BEREIT</div>
@@ -1547,6 +1604,31 @@
       </datalist>
     </section>
 
+    <section class="online-video-panel card">
+      <div class="archive-head">
+        <h2>Video</h2>
+        <div class="version">Android</div>
+      </div>
+      <label>Online-Video
+        <input id="onlineVideoUrl" type="url" inputmode="url" autocomplete="off" placeholder="https://...">
+      </label>
+      <label>Timer-Position
+        <select id="videoOverlayPosition">
+          <option value="right">Unten rechts</option>
+          <option value="left">Unten links</option>
+        </select>
+      </label>
+      <button id="openOnlineVideo" type="button" class="primary">ONLINE-VIDEO STARTEN</button>
+      <p class="online-video-status" id="onlineVideoStatus" role="status">Timer und Metronom starten mit der Videowiedergabe.</p>
+      <div class="video-source-divider" aria-hidden="true"></div>
+      <button id="openLocalVideo" type="button" class="local-video-banner">
+        <span class="video-icon" aria-hidden="true">▶</span>
+        <span><strong>VIDEO SUCHEN</strong><small>Video aus dem Gerätespeicher auswählen</small></span>
+        <span class="banner-arrow" aria-hidden="true">›</span>
+      </button>
+      <p class="online-video-status" id="localVideoStatus" role="status">Nach der Auswahl startet der Timer erst beim Abspielen.</p>
+    </section>
+
     <section class="archive card">
       <div class="archive-head">
         <h2>Bereiche / Archiv</h2>
@@ -1695,6 +1777,12 @@
       playAssistantVoice: document.getElementById("playAssistantVoice"),
       stopAssistantVoice: document.getElementById("stopAssistantVoice"),
       assistantVoiceStatus: document.getElementById("assistantVoiceStatus"),
+      onlineVideoUrl: document.getElementById("onlineVideoUrl"),
+      videoOverlayPosition: document.getElementById("videoOverlayPosition"),
+      openOnlineVideo: document.getElementById("openOnlineVideo"),
+      onlineVideoStatus: document.getElementById("onlineVideoStatus"),
+      openLocalVideo: document.getElementById("openLocalVideo"),
+      localVideoStatus: document.getElementById("localVideoStatus"),
       installBox: document.getElementById("installBox"),
       installButton: document.getElementById("installButton"),
       authGate: document.getElementById("authGate"),
@@ -2155,6 +2243,7 @@
         alarmVolume: readNumber(els.alarmVolume, 70),
         challengeTextEnabled: state.challengeTextEnabled,
         challengeVoiceEnabled: state.challengeVoiceEnabled,
+        videoOverlayPosition: els.videoOverlayPosition.value,
         flowName: state.flowName,
         flowType: state.flowType,
         pauseAfterRounds: state.pauseAfterRounds,
@@ -2192,6 +2281,7 @@
         alarmVolume: readNumber(els.alarmVolume, 70),
         challengeTextEnabled: state.challengeTextEnabled,
         challengeVoiceEnabled: state.challengeVoiceEnabled,
+        videoOverlayPosition: els.videoOverlayPosition.value,
         flowName: state.flowName,
         flowType: state.flowType,
         pauseAfterRounds: state.pauseAfterRounds,
@@ -2214,6 +2304,9 @@
       state.challengeTextEnabled = config.challengeTextEnabled === true;
       state.challengeVoiceEnabled = config.challengeVoiceEnabled !== false;
       els.challengeVoiceEnabled.value = String(state.challengeVoiceEnabled);
+      if (config.videoOverlayPosition === "left" || config.videoOverlayPosition === "right") {
+        els.videoOverlayPosition.value = config.videoOverlayPosition;
+      }
       state.flowName = config.flowName || "Eigener Ablauf";
       state.flowType = config.flowType || "custom";
       state.pauseAfterRounds = Array.isArray(config.pauseAfterRounds) ? config.pauseAfterRounds : null;
@@ -2271,6 +2364,9 @@
         state.challengeTextEnabled = settings.challengeTextEnabled === true;
         state.challengeVoiceEnabled = settings.challengeVoiceEnabled !== false;
         els.challengeVoiceEnabled.value = String(state.challengeVoiceEnabled);
+        if (settings.videoOverlayPosition === "left" || settings.videoOverlayPosition === "right") {
+          els.videoOverlayPosition.value = settings.videoOverlayPosition;
+        }
         state.flowName = settings.flowName || "Eigener Ablauf";
         state.flowType = settings.flowType || "custom";
         state.pauseAfterRounds = Array.isArray(settings.pauseAfterRounds) ? settings.pauseAfterRounds : null;
@@ -2593,6 +2689,46 @@
       els.authRemember.checked = false;
       showLocalAuth();
     });
+    function buildVideoPayload(url = "") {
+      return {
+        url,
+        position: els.videoOverlayPosition.value,
+        restSeconds: restSeconds(),
+        pauseEvery: pauseEveryRounds(),
+        pauseAfterRounds: state.pauseAfterRounds,
+        metronomeEnabled: els.metronomeEnabled.value === "true",
+        metronomeVolume: readNumber(els.metronomeVolume, 60),
+        modes: readModes().map((mode) => ({
+          name: mode.name,
+          seconds: Math.max(1, (Number(mode.minutes) || 0) * 60 + (Number(mode.seconds) || 0))
+        }))
+      };
+    }
+
+    els.openOnlineVideo.addEventListener("click", () => {
+      const url = els.onlineVideoUrl.value.trim();
+      if (!/^https:\/\//i.test(url)) {
+        els.onlineVideoStatus.textContent = "Bitte eine vollständige sichere URL mit https:// eingeben.";
+        return;
+      }
+      if (!window.AstraVideo || typeof window.AstraVideo.open !== "function") {
+        els.onlineVideoStatus.textContent = "Der Online-Videomodus ist nur in der installierten Android-App verfügbar.";
+        return;
+      }
+      saveSettings();
+      els.onlineVideoStatus.textContent = "Videomodus wird geöffnet ...";
+      window.AstraVideo.open(JSON.stringify(buildVideoPayload(url)));
+    });
+    els.openLocalVideo.addEventListener("click", () => {
+      if (!window.AstraVideo || typeof window.AstraVideo.openLocal !== "function") {
+        els.localVideoStatus.textContent = "Die Dateiauswahl ist nur in der installierten Android-App verfügbar.";
+        return;
+      }
+      saveSettings();
+      els.localVideoStatus.textContent = "Android-Dateiauswahl wird geöffnet ...";
+      window.AstraVideo.openLocal(JSON.stringify(buildVideoPayload()));
+    });
+    els.videoOverlayPosition.addEventListener("change", saveSettings);
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") closeMenu();
     });

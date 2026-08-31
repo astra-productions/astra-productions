@@ -1,6 +1,6 @@
 {
-  "versionCode": 18,
-  "versionName": "2.7",
-  "apkUrl": "https://astra-productions.github.io/astra-productions/downloads/AstraPulse-2.7.apk",
-  "notes": "Optional auf diesem Gerät angemeldet bleiben und neue Anzeige für die nächste Geschwindigkeit, Pause oder das Ende."
+  "versionCode": 19,
+  "versionName": "2.8",
+  "apkUrl": "https://astra-productions.github.io/astra-productions/downloads/AstraPulse-2.8.apk",
+  "notes": "Neuer Videobereich für Online- und gespeicherte Videos. Timer und Metronom folgen der tatsächlichen Wiedergabe."
 }

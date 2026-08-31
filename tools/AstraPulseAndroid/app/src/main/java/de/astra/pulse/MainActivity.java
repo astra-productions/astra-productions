@@ -29,7 +29,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class MainActivity extends FragmentActivity {
+    private static final int REQUEST_LOCAL_VIDEO = 2048;
     private WebView webView;
+    private String pendingVideoConfig;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     @Override
@@ -48,6 +50,7 @@ public class MainActivity extends FragmentActivity {
 
         webView.addJavascriptInterface(new UpdateBridge(), "AstraUpdater");
         webView.addJavascriptInterface(new BiometricBridge(), "AstraBiometric");
+        webView.addJavascriptInterface(new VideoBridge(), "AstraVideo");
         webView.setWebViewClient(new WebViewClient() {
             private boolean handleBiometricUrl(Uri uri) {
                 if (uri != null && "astra-pulse".equals(uri.getScheme()) && "biometric".equals(uri.getHost())) {
@@ -80,6 +83,33 @@ public class MainActivity extends FragmentActivity {
     }
 
     @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != REQUEST_LOCAL_VIDEO || resultCode != RESULT_OK || data == null || data.getData() == null) {
+            return;
+        }
+
+        Uri videoUri = data.getData();
+        try {
+            getContentResolver().takePersistableUriPermission(
+                    videoUri,
+                    data.getFlags() & Intent.FLAG_GRANT_READ_URI_PERMISSION
+            );
+        } catch (SecurityException ignored) {
+        }
+
+        try {
+            JSONObject config = new JSONObject(pendingVideoConfig == null ? "{}" : pendingVideoConfig);
+            config.put("url", videoUri.toString());
+            launchVideo(config.toString());
+        } catch (Exception error) {
+            Toast.makeText(this, "Das ausgewählte Video konnte nicht geöffnet werden.", Toast.LENGTH_LONG).show();
+        } finally {
+            pendingVideoConfig = null;
+        }
+    }
+
+    @Override
     protected void onDestroy() {
         executor.shutdownNow();
         super.onDestroy();
@@ -95,6 +125,47 @@ public class MainActivity extends FragmentActivity {
 
     private String quote(String value) {
         return JSONObject.quote(value == null ? "" : value);
+    }
+
+    private void launchVideo(String payload) {
+        Intent intent = new Intent(this, OnlineVideoActivity.class);
+        intent.putExtra(OnlineVideoActivity.EXTRA_CONFIG, payload);
+        startActivity(intent);
+    }
+
+    public class VideoBridge {
+        @JavascriptInterface
+        public void open(String payload) {
+            runOnUiThread(() -> {
+                try {
+                    JSONObject config = new JSONObject(payload);
+                    if (!config.optString("url", "").startsWith("https://")) {
+                        Toast.makeText(MainActivity.this, "Bitte eine sichere https://-Adresse verwenden.", Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    launchVideo(payload);
+                } catch (Exception error) {
+                    Toast.makeText(MainActivity.this, "Der Videomodus konnte nicht geöffnet werden.", Toast.LENGTH_LONG).show();
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void openLocal(String payload) {
+            runOnUiThread(() -> {
+                try {
+                    new JSONObject(payload);
+                    pendingVideoConfig = payload;
+                    Intent picker = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                    picker.addCategory(Intent.CATEGORY_OPENABLE);
+                    picker.setType("video/*");
+                    picker.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+                    startActivityForResult(picker, REQUEST_LOCAL_VIDEO);
+                } catch (Exception error) {
+                    Toast.makeText(MainActivity.this, "Die Videoauswahl konnte nicht geöffnet werden.", Toast.LENGTH_LONG).show();
+                }
+            });
+        }
     }
 
     private void showBiometricPrompt() {
