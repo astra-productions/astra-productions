@@ -1,6 +1,6 @@
 {
-  "versionCode": 20,
-  "versionName": "2.9",
-  "apkUrl": "https://astra-productions.github.io/astra-productions/downloads/AstraPulse-2.9.apk",
-  "notes": "Lokale Videos zeigen vor dem Start eine Vorschau. Online-Videos unterstützen jetzt den Vollbildmodus mit eingeblendetem Timer."
+  "versionCode": 23,
+  "versionName": "3.2",
+  "apkUrl": "https://astra-productions.github.io/astra-productions/downloads/AstraPulse-3.2.apk",
+  "notes": "Der Video-Timer ist kleiner, frei verschiebbar und merkt sich seine Position. Gespeicherte Videos verwenden Media3 ExoPlayer."
 }

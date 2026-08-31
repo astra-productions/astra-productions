@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.provider.Settings;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
@@ -156,10 +157,14 @@ public class MainActivity extends FragmentActivity {
                 try {
                     new JSONObject(payload);
                     pendingVideoConfig = payload;
-                    Intent picker = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-                    picker.addCategory(Intent.CATEGORY_OPENABLE);
+                    Intent picker;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        picker = new Intent(MediaStore.ACTION_PICK_IMAGES);
+                    } else {
+                        picker = new Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
+                    }
                     picker.setType("video/*");
-                    picker.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+                    picker.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     startActivityForResult(picker, REQUEST_LOCAL_VIDEO);
                 } catch (Exception error) {
                     Toast.makeText(MainActivity.this, "Die Videoauswahl konnte nicht geöffnet werden.", Toast.LENGTH_LONG).show();

@@ -2,6 +2,7 @@ package de.astra.pulse;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
@@ -9,7 +10,6 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.SweepGradient;
 import android.graphics.Typeface;
-import android.media.MediaPlayer;
 import android.media.ToneGenerator;
 import android.net.Uri;
 import android.os.Bundle;
@@ -17,6 +17,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.view.View;
+import android.view.MotionEvent;
 import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
@@ -26,9 +27,11 @@ import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.widget.MediaController;
 import android.widget.Toast;
-import android.widget.VideoView;
+import androidx.media3.common.MediaItem;
+import androidx.media3.common.Player;
+import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.ui.PlayerView;
 import androidx.core.view.GravityCompat;
 import androidx.core.view.ViewCompat;
 import java.util.ArrayList;
@@ -42,7 +45,9 @@ import org.json.JSONObject;
 /* JADX INFO: loaded from: classes3.dex */
 public class OnlineVideoActivity extends Activity {
     public static final String EXTRA_CONFIG = "astra_video_config";
-    private VideoView localVideo;
+    private static final String OVERLAY_PREFS = "astra_video_overlay";
+    private ExoPlayer localPlayer;
+    private PlayerView localPlayerView;
     private Button playButton;
     private FrameLayout rootFrame;
     private LinearLayout controlPanel;
@@ -52,29 +57,6 @@ public class OnlineVideoActivity extends Activity {
     private OverlayTimerView timerView;
     private WebView webView;
     private boolean timerOnRight = true;
-    private boolean localPreviewing = false;
-    private final Handler playbackHandler = new Handler(Looper.getMainLooper());
-    private boolean localVideoWasPlaying = false;
-    private final Runnable localPlaybackWatcher = new Runnable() { // from class: de.astra.pulse.OnlineVideoActivity.1
-        @Override // java.lang.Runnable
-        public void run() {
-            if (OnlineVideoActivity.this.localVideo != null && OnlineVideoActivity.this.timerView != null) {
-                boolean playing = OnlineVideoActivity.this.localVideo.isPlaying();
-                if (OnlineVideoActivity.this.localPreviewing) {
-                    OnlineVideoActivity.this.localVideoWasPlaying = false;
-                    OnlineVideoActivity.this.playbackHandler.postDelayed(this, 100L);
-                    return;
-                }
-                if (playing && !OnlineVideoActivity.this.localVideoWasPlaying) {
-                    OnlineVideoActivity.this.timerView.startTimer();
-                } else if (!playing && OnlineVideoActivity.this.localVideoWasPlaying) {
-                    OnlineVideoActivity.this.timerView.pauseTimer();
-                }
-                OnlineVideoActivity.this.localVideoWasPlaying = playing;
-                OnlineVideoActivity.this.playbackHandler.postDelayed(this, 250L);
-            }
-        }
-    };
 
     @Override // android.app.Activity
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,15 +74,15 @@ public class OnlineVideoActivity extends Activity {
             this.rootFrame = new FrameLayout(this);
             this.rootFrame.setBackgroundColor(ViewCompat.MEASURED_STATE_MASK);
             if (localSource) {
-                this.localVideo = createLocalVideo(Uri.parse(targetUrl));
-                mediaSurface = this.localVideo;
+                this.localPlayerView = createLocalVideo(Uri.parse(targetUrl));
+                mediaSurface = this.localPlayerView;
             } else {
                 this.webView = createWebView();
                 mediaSurface = this.webView;
             }
             this.rootFrame.addView(mediaSurface, new FrameLayout.LayoutParams(-1, -1));
             this.timerView = new OverlayTimerView(this, config);
-            int timerSize = dp(138);
+            int timerSize = dp(108);
             this.timerLayout = new FrameLayout.LayoutParams(timerSize, timerSize);
             this.timerLayout.bottomMargin = dp(24);
             updateTimerPosition();
@@ -126,17 +108,17 @@ public class OnlineVideoActivity extends Activity {
             reset.setOnClickListener(view -> this.timerView.resetTimer());
             side.setOnClickListener(view -> {
                 this.timerOnRight = !this.timerOnRight;
+                getSharedPreferences(OVERLAY_PREFS, MODE_PRIVATE).edit().clear().apply();
                 updateTimerPosition();
                 this.timerView.setLayoutParams(this.timerLayout);
+                this.rootFrame.post(() -> placeTimerInCorner());
             });
-            this.timerView.setOnClickListener(view -> this.timerView.toggle());
+            attachDraggableTimer();
             this.timerView.setStateListener(running -> this.playButton.setText(running ? "Ⅱ" : "▶"));
             setContentView(this.rootFrame);
+            this.rootFrame.post(this::restoreTimerPosition);
             if (this.webView != null) {
                 this.webView.loadUrl(targetUrl);
-            }
-            if (this.localVideo != null) {
-                this.playbackHandler.post(this.localPlaybackWatcher);
             }
         } catch (Exception e) {
             Toast.makeText(this, "Der Online-Videomodus konnte nicht gestartet werden.", 1).show();
@@ -253,31 +235,34 @@ public class OnlineVideoActivity extends Activity {
         }
     }
 
-    private VideoView createLocalVideo(Uri uri) {
-        final VideoView view = new VideoView(this);
-        view.setBackgroundColor(ViewCompat.MEASURED_STATE_MASK);
-        MediaController controls = new MediaController(this);
-        controls.setAnchorView(view);
-        view.setMediaController(controls);
-        view.setVideoURI(uri);
-        view.setOnPreparedListener(player -> {
-            player.setLooping(false);
-            this.localPreviewing = true;
-            player.setOnInfoListener((mediaPlayer, what, extra) -> {
-                if (what == MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START && this.localPreviewing) {
-                    view.pause();
-                    this.localPreviewing = false;
-                    this.localVideoWasPlaying = false;
-                    controls.show(0);
+    private PlayerView createLocalVideo(Uri uri) {
+        PlayerView view = new PlayerView(this);
+        view.setBackgroundColor(Color.BLACK);
+        view.setUseController(true);
+        view.setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING);
+        this.localPlayer = new ExoPlayer.Builder(this).build();
+        view.setPlayer(this.localPlayer);
+        this.localPlayer.addListener(new Player.Listener() {
+            @Override
+            public void onIsPlayingChanged(boolean isPlaying) {
+                if (OnlineVideoActivity.this.timerView == null) return;
+                if (isPlaying) {
+                    OnlineVideoActivity.this.timerView.startTimer();
+                } else {
+                    OnlineVideoActivity.this.timerView.pauseTimer();
                 }
-                return false;
-            });
-            view.start();
+            }
+
+            @Override
+            public void onPlayerError(androidx.media3.common.PlaybackException error) {
+                Toast.makeText(OnlineVideoActivity.this,
+                        "Dieses Video konnte nicht abgespielt werden: " + error.getErrorCodeName(),
+                        Toast.LENGTH_LONG).show();
+            }
         });
-        view.setOnErrorListener((player, what, extra) -> {
-            Toast.makeText(this, "Dieses Videoformat konnte nicht abgespielt werden.", Toast.LENGTH_LONG).show();
-            return true;
-        });
+        this.localPlayer.setMediaItem(MediaItem.fromUri(uri));
+        this.localPlayer.setPlayWhenReady(false);
+        this.localPlayer.prepare();
         return view;
     }
 
@@ -322,17 +307,6 @@ public class OnlineVideoActivity extends Activity {
         super.onBackPressed();
     }
 
-    static /* synthetic */ void lambda$createLocalVideo$0(VideoView view, MediaPlayer player) {
-        player.setLooping(false);
-        view.start();
-    }
-
-    /* JADX INFO: renamed from: lambda$createLocalVideo$1$de-astra-pulse-OnlineVideoActivity, reason: not valid java name */
-    /* synthetic */ boolean m44lambda$createLocalVideo$1$deastrapulseOnlineVideoActivity(MediaPlayer player, int what, int extra) {
-        Toast.makeText(this, "Dieses Videoformat konnte nicht abgespielt werden.", 1).show();
-        return true;
-    }
-
     private Button controlButton(String text, String description) {
         Button button = new Button(this);
         LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(dp(46), dp(46));
@@ -353,6 +327,79 @@ public class OnlineVideoActivity extends Activity {
         this.timerLayout.rightMargin = dp(16);
     }
 
+    private void attachDraggableTimer() {
+        this.timerView.setOnTouchListener(new View.OnTouchListener() {
+            private float downRawX;
+            private float downRawY;
+            private float startX;
+            private float startY;
+            private boolean dragged;
+
+            @Override
+            public boolean onTouch(View view, MotionEvent event) {
+                switch (event.getActionMasked()) {
+                    case MotionEvent.ACTION_DOWN:
+                        downRawX = event.getRawX();
+                        downRawY = event.getRawY();
+                        startX = view.getX();
+                        startY = view.getY();
+                        dragged = false;
+                        return true;
+                    case MotionEvent.ACTION_MOVE:
+                        float dx = event.getRawX() - downRawX;
+                        float dy = event.getRawY() - downRawY;
+                        if (Math.hypot(dx, dy) > dp(5)) dragged = true;
+                        float maxX = Math.max(0, rootFrame.getWidth() - view.getWidth());
+                        float maxY = Math.max(0, rootFrame.getHeight() - view.getHeight());
+                        view.setX(Math.max(0, Math.min(maxX, startX + dx)));
+                        view.setY(Math.max(0, Math.min(maxY, startY + dy)));
+                        return true;
+                    case MotionEvent.ACTION_UP:
+                    case MotionEvent.ACTION_CANCEL:
+                        if (dragged) {
+                            saveTimerPosition();
+                        } else if (event.getActionMasked() == MotionEvent.ACTION_UP) {
+                            view.performClick();
+                            timerView.toggle();
+                        }
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+        });
+    }
+
+    private void saveTimerPosition() {
+        float maxX = Math.max(1, this.rootFrame.getWidth() - this.timerView.getWidth());
+        float maxY = Math.max(1, this.rootFrame.getHeight() - this.timerView.getHeight());
+        getSharedPreferences(OVERLAY_PREFS, MODE_PRIVATE).edit()
+                .putFloat("x", this.timerView.getX() / maxX)
+                .putFloat("y", this.timerView.getY() / maxY)
+                .apply();
+    }
+
+    private void restoreTimerPosition() {
+        SharedPreferences prefs = getSharedPreferences(OVERLAY_PREFS, MODE_PRIVATE);
+        if (!prefs.contains("x") || !prefs.contains("y")) {
+            placeTimerInCorner();
+            return;
+        }
+        float maxX = Math.max(0, this.rootFrame.getWidth() - this.timerView.getWidth());
+        float maxY = Math.max(0, this.rootFrame.getHeight() - this.timerView.getHeight());
+        this.timerView.setX(maxX * prefs.getFloat("x", 1f));
+        this.timerView.setY(maxY * prefs.getFloat("y", 1f));
+    }
+
+    private void placeTimerInCorner() {
+        float x = this.timerOnRight
+                ? this.rootFrame.getWidth() - this.timerView.getWidth() - dp(16)
+                : dp(16);
+        float y = this.rootFrame.getHeight() - this.timerView.getHeight() - dp(24);
+        this.timerView.setX(Math.max(0, x));
+        this.timerView.setY(Math.max(0, y));
+    }
+
     private int dp(int value) {
         return Math.round(value * getResources().getDisplayMetrics().density);
     }
@@ -365,8 +412,8 @@ public class OnlineVideoActivity extends Activity {
         if (this.webView != null) {
             this.webView.onPause();
         }
-        if (this.localVideo != null && this.localVideo.isPlaying()) {
-            this.localVideo.pause();
+        if (this.localPlayer != null && this.localPlayer.isPlaying()) {
+            this.localPlayer.pause();
         }
         super.onPause();
     }
@@ -382,7 +429,6 @@ public class OnlineVideoActivity extends Activity {
     @Override // android.app.Activity
     protected void onDestroy() {
         hideFullscreenVideo();
-        this.playbackHandler.removeCallbacks(this.localPlaybackWatcher);
         if (this.timerView != null) {
             this.timerView.release();
         }
@@ -390,8 +436,12 @@ public class OnlineVideoActivity extends Activity {
             this.webView.stopLoading();
             this.webView.destroy();
         }
-        if (this.localVideo != null) {
-            this.localVideo.stopPlayback();
+        if (this.localPlayerView != null) {
+            this.localPlayerView.setPlayer(null);
+        }
+        if (this.localPlayer != null) {
+            this.localPlayer.release();
+            this.localPlayer = null;
         }
         super.onDestroy();
     }
