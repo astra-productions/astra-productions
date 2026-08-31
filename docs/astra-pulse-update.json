@@ -1,6 +1,6 @@
 {
-  "versionCode": 23,
-  "versionName": "3.2",
-  "apkUrl": "https://astra-productions.github.io/astra-productions/downloads/AstraPulse-3.2.apk",
-  "notes": "Der Video-Timer ist kleiner, frei verschiebbar und merkt sich seine Position. Gespeicherte Videos verwenden Media3 ExoPlayer."
+  "versionCode": 24,
+  "versionName": "3.3",
+  "apkUrl": "https://astra-productions.github.io/astra-productions/downloads/AstraPulse-3.3.apk",
+  "notes": "Langes Drücken auf den Video-Timer öffnet getrennte Lautstärkeregler für Video und Metronom."
 }

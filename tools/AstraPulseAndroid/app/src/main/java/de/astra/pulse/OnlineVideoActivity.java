@@ -1,6 +1,7 @@
 package de.astra.pulse;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
@@ -27,6 +28,8 @@ import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.SeekBar;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.Player;
@@ -82,6 +85,11 @@ public class OnlineVideoActivity extends Activity {
             }
             this.rootFrame.addView(mediaSurface, new FrameLayout.LayoutParams(-1, -1));
             this.timerView = new OverlayTimerView(this, config);
+            SharedPreferences overlayPrefs = getSharedPreferences(OVERLAY_PREFS, MODE_PRIVATE);
+            if (overlayPrefs.contains("metronome_volume")) {
+                this.timerView.setMetronomeVolume(overlayPrefs.getInt("metronome_volume", 60));
+            }
+            setVideoVolume(overlayPrefs.getInt("video_volume", 100));
             int timerSize = dp(108);
             this.timerLayout = new FrameLayout.LayoutParams(timerSize, timerSize);
             this.timerLayout.bottomMargin = dp(24);
@@ -174,6 +182,9 @@ public class OnlineVideoActivity extends Activity {
             public void onPageFinished(WebView currentView, String url) {
                 super.onPageFinished(currentView, url);
                 OnlineVideoActivity.this.injectVideoPlaybackListener(currentView);
+                OnlineVideoActivity.this.setVideoVolume(
+                        getSharedPreferences(OVERLAY_PREFS, MODE_PRIVATE).getInt("video_volume", 100)
+                );
             }
         });
         view.setWebChromeClient(new WebChromeClient() {
@@ -334,6 +345,13 @@ public class OnlineVideoActivity extends Activity {
             private float startX;
             private float startY;
             private boolean dragged;
+            private boolean longPressed;
+            private final Runnable openVolume = () -> {
+                if (!dragged) {
+                    longPressed = true;
+                    showVolumeDialog();
+                }
+            };
 
             @Override
             public boolean onTouch(View view, MotionEvent event) {
@@ -344,11 +362,16 @@ public class OnlineVideoActivity extends Activity {
                         startX = view.getX();
                         startY = view.getY();
                         dragged = false;
+                        longPressed = false;
+                        view.postDelayed(openVolume, 550L);
                         return true;
                     case MotionEvent.ACTION_MOVE:
                         float dx = event.getRawX() - downRawX;
                         float dy = event.getRawY() - downRawY;
-                        if (Math.hypot(dx, dy) > dp(5)) dragged = true;
+                        if (Math.hypot(dx, dy) > dp(5)) {
+                            dragged = true;
+                            view.removeCallbacks(openVolume);
+                        }
                         float maxX = Math.max(0, rootFrame.getWidth() - view.getWidth());
                         float maxY = Math.max(0, rootFrame.getHeight() - view.getHeight());
                         view.setX(Math.max(0, Math.min(maxX, startX + dx)));
@@ -356,9 +379,10 @@ public class OnlineVideoActivity extends Activity {
                         return true;
                     case MotionEvent.ACTION_UP:
                     case MotionEvent.ACTION_CANCEL:
+                        view.removeCallbacks(openVolume);
                         if (dragged) {
                             saveTimerPosition();
-                        } else if (event.getActionMasked() == MotionEvent.ACTION_UP) {
+                        } else if (!longPressed && event.getActionMasked() == MotionEvent.ACTION_UP) {
                             view.performClick();
                             timerView.toggle();
                         }
@@ -368,6 +392,75 @@ public class OnlineVideoActivity extends Activity {
                 }
             }
         });
+    }
+
+    private void showVolumeDialog() {
+        SharedPreferences prefs = getSharedPreferences(OVERLAY_PREFS, MODE_PRIVATE);
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(dp(24), dp(10), dp(24), dp(6));
+
+        TextView videoLabel = volumeLabel("Video", prefs.getInt("video_volume", 100));
+        SeekBar videoVolume = volumeSlider(prefs.getInt("video_volume", 100));
+        TextView metronomeLabel = volumeLabel("Metronom", prefs.getInt("metronome_volume", this.timerView.getMetronomeVolume()));
+        SeekBar metronomeVolume = volumeSlider(prefs.getInt("metronome_volume", this.timerView.getMetronomeVolume()));
+        content.addView(videoLabel);
+        content.addView(videoVolume);
+        content.addView(metronomeLabel);
+        content.addView(metronomeVolume);
+
+        videoVolume.setOnSeekBarChangeListener(volumeListener(value -> {
+            videoLabel.setText("Video · " + value + "%");
+            prefs.edit().putInt("video_volume", value).apply();
+            setVideoVolume(value);
+        }));
+        metronomeVolume.setOnSeekBarChangeListener(volumeListener(value -> {
+            metronomeLabel.setText("Metronom · " + value + "%");
+            prefs.edit().putInt("metronome_volume", value).apply();
+            this.timerView.setMetronomeVolume(value);
+        }));
+
+        new AlertDialog.Builder(this)
+                .setTitle("Lautstärke")
+                .setView(content)
+                .setPositiveButton("FERTIG", null)
+                .show();
+    }
+
+    private TextView volumeLabel(String name, int value) {
+        TextView label = new TextView(this);
+        label.setText(name + " · " + value + "%");
+        label.setTextColor(Color.WHITE);
+        label.setTextSize(15f);
+        label.setPadding(0, dp(12), 0, 0);
+        return label;
+    }
+
+    private SeekBar volumeSlider(int value) {
+        SeekBar slider = new SeekBar(this);
+        slider.setMax(100);
+        slider.setProgress(Math.max(0, Math.min(100, value)));
+        return slider;
+    }
+
+    private interface VolumeChange { void onChange(int value); }
+
+    private SeekBar.OnSeekBarChangeListener volumeListener(VolumeChange change) {
+        return new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (fromUser) change.onChange(progress);
+            }
+            @Override public void onStartTrackingTouch(SeekBar seekBar) { }
+            @Override public void onStopTrackingTouch(SeekBar seekBar) { }
+        };
+    }
+
+    private void setVideoVolume(int value) {
+        float volume = Math.max(0, Math.min(100, value)) / 100f;
+        if (this.localPlayer != null) this.localPlayer.setVolume(volume);
+        if (this.webView != null) {
+            this.webView.evaluateJavascript("document.querySelectorAll('video').forEach(function(v){v.volume=" + volume + ";});", null);
+        }
     }
 
     private void saveTimerPosition() {
@@ -476,7 +569,8 @@ public class OnlineVideoActivity extends Activity {
         private boolean running;
         private StateListener stateListener;
         private final Runnable ticker;
-        private final ToneGenerator tone;
+        private ToneGenerator tone;
+        private int metronomeVolume;
         private long totalMs;
         private final boolean usePresetPauses;
 
@@ -553,14 +647,25 @@ public class OnlineVideoActivity extends Activity {
             this.pauseEvery = Math.max(1, config.optInt("pauseEvery", 1));
             this.restSeconds = Math.max(1, config.optInt("restSeconds", 20));
             this.metronomeEnabled = config.optBoolean("metronomeEnabled", false);
-            int volume = Math.max(0, Math.min(100, config.optInt("metronomeVolume", 60)));
-            this.tone = new ToneGenerator(3, volume);
+            this.metronomeVolume = Math.max(0, Math.min(100, config.optInt("metronomeVolume", 60)));
+            this.tone = new ToneGenerator(3, this.metronomeVolume);
             resetTimer();
         }
 
         void setStateListener(StateListener listener) {
             this.stateListener = listener;
             notifyState();
+        }
+
+        int getMetronomeVolume() {
+            return this.metronomeVolume;
+        }
+
+        void setMetronomeVolume(int volume) {
+            this.metronomeVolume = Math.max(0, Math.min(100, volume));
+            this.tone.release();
+            this.tone = new ToneGenerator(3, this.metronomeVolume);
+            if (this.running) restartBeat();
         }
 
         void toggle() {
