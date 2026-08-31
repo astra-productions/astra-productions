@@ -44,10 +44,15 @@ public class OnlineVideoActivity extends Activity {
     public static final String EXTRA_CONFIG = "astra_video_config";
     private VideoView localVideo;
     private Button playButton;
+    private FrameLayout rootFrame;
+    private LinearLayout controlPanel;
+    private View customVideoView;
+    private WebChromeClient.CustomViewCallback customViewCallback;
     private FrameLayout.LayoutParams timerLayout;
     private OverlayTimerView timerView;
     private WebView webView;
     private boolean timerOnRight = true;
+    private boolean localPreviewing = false;
     private final Handler playbackHandler = new Handler(Looper.getMainLooper());
     private boolean localVideoWasPlaying = false;
     private final Runnable localPlaybackWatcher = new Runnable() { // from class: de.astra.pulse.OnlineVideoActivity.1
@@ -55,6 +60,11 @@ public class OnlineVideoActivity extends Activity {
         public void run() {
             if (OnlineVideoActivity.this.localVideo != null && OnlineVideoActivity.this.timerView != null) {
                 boolean playing = OnlineVideoActivity.this.localVideo.isPlaying();
+                if (OnlineVideoActivity.this.localPreviewing) {
+                    OnlineVideoActivity.this.localVideoWasPlaying = false;
+                    OnlineVideoActivity.this.playbackHandler.postDelayed(this, 100L);
+                    return;
+                }
                 if (playing && !OnlineVideoActivity.this.localVideoWasPlaying) {
                     OnlineVideoActivity.this.timerView.startTimer();
                 } else if (!playing && OnlineVideoActivity.this.localVideoWasPlaying) {
@@ -79,8 +89,8 @@ public class OnlineVideoActivity extends Activity {
                 throw new IllegalArgumentException("Ungueltige URL");
             }
             this.timerOnRight = !"left".equals(config.optString("position", "right"));
-            FrameLayout frameLayout = new FrameLayout(this);
-            frameLayout.setBackgroundColor(ViewCompat.MEASURED_STATE_MASK);
+            this.rootFrame = new FrameLayout(this);
+            this.rootFrame.setBackgroundColor(ViewCompat.MEASURED_STATE_MASK);
             if (localSource) {
                 this.localVideo = createLocalVideo(Uri.parse(targetUrl));
                 mediaSurface = this.localVideo;
@@ -88,29 +98,29 @@ public class OnlineVideoActivity extends Activity {
                 this.webView = createWebView();
                 mediaSurface = this.webView;
             }
-            frameLayout.addView(mediaSurface, new FrameLayout.LayoutParams(-1, -1));
+            this.rootFrame.addView(mediaSurface, new FrameLayout.LayoutParams(-1, -1));
             this.timerView = new OverlayTimerView(this, config);
             int timerSize = dp(138);
             this.timerLayout = new FrameLayout.LayoutParams(timerSize, timerSize);
             this.timerLayout.bottomMargin = dp(24);
             updateTimerPosition();
-            frameLayout.addView(this.timerView, this.timerLayout);
-            LinearLayout controls = new LinearLayout(this);
-            controls.setOrientation(0);
-            controls.setGravity(17);
-            controls.setPadding(dp(4), dp(4), dp(4), dp(4));
+            this.rootFrame.addView(this.timerView, this.timerLayout);
+            this.controlPanel = new LinearLayout(this);
+            this.controlPanel.setOrientation(0);
+            this.controlPanel.setGravity(17);
+            this.controlPanel.setPadding(dp(4), dp(4), dp(4), dp(4));
             Button close = controlButton("X", "Videomodus schliessen");
             this.playButton = controlButton("▶", "Timer starten oder pausieren");
             Button reset = controlButton("↺", "Timer zuruecksetzen");
             Button side = controlButton("↔", "Timer-Seite wechseln");
-            controls.addView(close);
-            controls.addView(this.playButton);
-            controls.addView(reset);
-            controls.addView(side);
+            this.controlPanel.addView(close);
+            this.controlPanel.addView(this.playButton);
+            this.controlPanel.addView(reset);
+            this.controlPanel.addView(side);
             FrameLayout.LayoutParams controlsLayout = new FrameLayout.LayoutParams(-2, -2, 8388661);
             controlsLayout.topMargin = dp(10);
             controlsLayout.rightMargin = dp(10);
-            frameLayout.addView(controls, controlsLayout);
+            this.rootFrame.addView(this.controlPanel, controlsLayout);
             close.setOnClickListener(view -> finish());
             this.playButton.setOnClickListener(view -> this.timerView.toggle());
             reset.setOnClickListener(view -> this.timerView.resetTimer());
@@ -121,7 +131,7 @@ public class OnlineVideoActivity extends Activity {
             });
             this.timerView.setOnClickListener(view -> this.timerView.toggle());
             this.timerView.setStateListener(running -> this.playButton.setText(running ? "Ⅱ" : "▶"));
-            setContentView(frameLayout);
+            setContentView(this.rootFrame);
             if (this.webView != null) {
                 this.webView.loadUrl(targetUrl);
             }
@@ -184,7 +194,17 @@ public class OnlineVideoActivity extends Activity {
                 OnlineVideoActivity.this.injectVideoPlaybackListener(currentView);
             }
         });
-        view.setWebChromeClient(new WebChromeClient());
+        view.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public void onShowCustomView(View customView, CustomViewCallback callback) {
+                showFullscreenVideo(customView, callback);
+            }
+
+            @Override
+            public void onHideCustomView() {
+                hideFullscreenVideo();
+            }
+        });
         CookieManager.getInstance().setAcceptCookie(true);
         CookieManager.getInstance().setAcceptThirdPartyCookies(view, true);
         return view;
@@ -242,14 +262,64 @@ public class OnlineVideoActivity extends Activity {
         view.setVideoURI(uri);
         view.setOnPreparedListener(player -> {
             player.setLooping(false);
-            view.seekTo(1);
-            controls.show(0);
+            this.localPreviewing = true;
+            player.setOnInfoListener((mediaPlayer, what, extra) -> {
+                if (what == MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START && this.localPreviewing) {
+                    view.pause();
+                    this.localPreviewing = false;
+                    this.localVideoWasPlaying = false;
+                    controls.show(0);
+                }
+                return false;
+            });
+            view.start();
         });
         view.setOnErrorListener((player, what, extra) -> {
             Toast.makeText(this, "Dieses Videoformat konnte nicht abgespielt werden.", Toast.LENGTH_LONG).show();
             return true;
         });
         return view;
+    }
+
+    private void showFullscreenVideo(View view, WebChromeClient.CustomViewCallback callback) {
+        if (this.customVideoView != null || this.rootFrame == null) {
+            callback.onCustomViewHidden();
+            return;
+        }
+        this.customVideoView = view;
+        this.customViewCallback = callback;
+        this.rootFrame.addView(view, new FrameLayout.LayoutParams(-1, -1));
+        this.timerView.bringToFront();
+        this.controlPanel.bringToFront();
+        getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+        );
+    }
+
+    private void hideFullscreenVideo() {
+        if (this.customVideoView == null) return;
+        this.rootFrame.removeView(this.customVideoView);
+        this.customVideoView = null;
+        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+        if (this.customViewCallback != null) {
+            this.customViewCallback.onCustomViewHidden();
+            this.customViewCallback = null;
+        }
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (this.customVideoView != null) {
+            hideFullscreenVideo();
+            return;
+        }
+        if (this.webView != null && this.webView.canGoBack()) {
+            this.webView.goBack();
+            return;
+        }
+        super.onBackPressed();
     }
 
     static /* synthetic */ void lambda$createLocalVideo$0(VideoView view, MediaPlayer player) {
@@ -311,6 +381,7 @@ public class OnlineVideoActivity extends Activity {
 
     @Override // android.app.Activity
     protected void onDestroy() {
+        hideFullscreenVideo();
         this.playbackHandler.removeCallbacks(this.localPlaybackWatcher);
         if (this.timerView != null) {
             this.timerView.release();

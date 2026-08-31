@@ -1,6 +1,6 @@
 {
-  "versionCode": 19,
-  "versionName": "2.8",
-  "apkUrl": "https://astra-productions.github.io/astra-productions/downloads/AstraPulse-2.8.apk",
-  "notes": "Neuer Videobereich für Online- und gespeicherte Videos. Timer und Metronom folgen der tatsächlichen Wiedergabe."
+  "versionCode": 20,
+  "versionName": "2.9",
+  "apkUrl": "https://astra-productions.github.io/astra-productions/downloads/AstraPulse-2.9.apk",
+  "notes": "Lokale Videos zeigen vor dem Start eine Vorschau. Online-Videos unterstützen jetzt den Vollbildmodus mit eingeblendetem Timer."
 }
