@@ -54,6 +54,7 @@ public class OnlineVideoActivity extends Activity {
     private Button playButton;
     private FrameLayout rootFrame;
     private LinearLayout controlPanel;
+    private Button toolbarToggle;
     private View customVideoView;
     private WebChromeClient.CustomViewCallback customViewCallback;
     private FrameLayout.LayoutParams timerLayout;
@@ -109,8 +110,14 @@ public class OnlineVideoActivity extends Activity {
             this.controlPanel.addView(side);
             FrameLayout.LayoutParams controlsLayout = new FrameLayout.LayoutParams(-2, -2, 8388661);
             controlsLayout.topMargin = dp(10);
-            controlsLayout.rightMargin = dp(10);
+            controlsLayout.rightMargin = dp(62);
             this.rootFrame.addView(this.controlPanel, controlsLayout);
+            this.toolbarToggle = controlButton("⌃", "Astra-Steuerleiste einklappen");
+            FrameLayout.LayoutParams toggleLayout = new FrameLayout.LayoutParams(dp(46), dp(46), 8388661);
+            toggleLayout.topMargin = dp(14);
+            toggleLayout.rightMargin = dp(10);
+            this.rootFrame.addView(this.toolbarToggle, toggleLayout);
+            this.toolbarToggle.setOnClickListener(view -> toggleControlPanel());
             close.setOnClickListener(view -> finish());
             this.playButton.setOnClickListener(view -> this.timerView.toggle());
             reset.setOnClickListener(view -> this.timerView.resetTimer());
@@ -287,6 +294,7 @@ public class OnlineVideoActivity extends Activity {
         this.rootFrame.addView(view, new FrameLayout.LayoutParams(-1, -1));
         this.timerView.bringToFront();
         this.controlPanel.bringToFront();
+        this.toolbarToggle.bringToFront();
         getWindow().getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_FULLSCREEN
                         | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
@@ -303,6 +311,15 @@ public class OnlineVideoActivity extends Activity {
             this.customViewCallback.onCustomViewHidden();
             this.customViewCallback = null;
         }
+    }
+
+    private void toggleControlPanel() {
+        boolean open = this.controlPanel.getVisibility() == View.VISIBLE;
+        this.controlPanel.setVisibility(open ? View.GONE : View.VISIBLE);
+        this.toolbarToggle.setText(open ? "⌄" : "⌃");
+        this.toolbarToggle.setContentDescription(open
+                ? "Astra-Steuerleiste ausklappen"
+                : "Astra-Steuerleiste einklappen");
     }
 
     @Override

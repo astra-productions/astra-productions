@@ -1247,6 +1247,25 @@
       font-size: 0.86rem;
     }
 
+    .speed-test-list { display: grid; gap: 8px; }
+    .speed-test-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border: 1px solid rgba(255, 83, 205, 0.28);
+      background: rgba(10, 5, 18, 0.55);
+    }
+    .speed-test-row strong { min-width: 0; }
+    .speed-test-row span { color: var(--muted); font-size: 0.78rem; }
+    .speed-test-row button { min-width: 76px; min-height: 38px; padding: 0 12px; }
+    .speed-test-row button.active {
+      border-color: #ff5fd2;
+      color: #fff;
+      box-shadow: 0 0 15px rgba(255, 61, 202, 0.35);
+    }
+
     .online-video-panel {
       display: grid;
       gap: 12px;
@@ -1604,6 +1623,28 @@
       </datalist>
     </section>
 
+    <section class="archive card">
+      <div class="archive-head">
+        <h2>Geschwindigkeitstest</h2>
+        <div class="version" id="speedTestBpm">70 BPM</div>
+      </div>
+      <div class="speed-test-list" id="speedTestList">
+        <div class="speed-test-row"><strong>Slow</strong><span>50 BPM</span><button type="button" data-speed-test="Slow">TEST</button></div>
+        <div class="speed-test-row"><strong>Normal</strong><span>70 BPM</span><button type="button" data-speed-test="Normal">TEST</button></div>
+        <div class="speed-test-row"><strong>Fast</strong><span>100 BPM</span><button type="button" data-speed-test="Fast">TEST</button></div>
+        <div class="speed-test-row"><strong>Faster</strong><span>130 BPM</span><button type="button" data-speed-test="Faster">TEST</button></div>
+        <div class="speed-test-row"><strong>Super Fast</strong><span>160 BPM</span><button type="button" data-speed-test="Super fast">TEST</button></div>
+        <div class="speed-test-row"><strong>Speed</strong><span>180 BPM</span><button type="button" data-speed-test="Speed">TEST</button></div>
+        <div class="speed-test-row"><strong>Super Speed</strong><span>210 BPM</span><button type="button" data-speed-test="Super Speed">TEST</button></div>
+        <div class="speed-test-row"><strong>Ultraspeed</strong><span>240 BPM</span><button type="button" data-speed-test="Ultraspeed">TEST</button></div>
+      </div>
+      <label>Test-Lautstärke
+        <input id="speedTestVolume" type="range" min="0" max="100" value="60">
+      </label>
+      <button id="stopSpeedTest" type="button">TEST STOPPEN</button>
+      <p class="voice-status" id="speedTestStatus" role="status">Normal auswählen und anhören.</p>
+    </section>
+
     <section class="online-video-panel card">
       <div class="archive-head">
         <h2>Video</h2>
@@ -1627,6 +1668,20 @@
         <span class="banner-arrow" aria-hidden="true">›</span>
       </button>
       <p class="online-video-status" id="localVideoStatus" role="status">Nach der Auswahl startet der Timer erst beim Abspielen.</p>
+      <div class="video-source-divider" aria-hidden="true"></div>
+      <label>Gewünschte Challenge-Intensität
+        <select id="videoChallengeStrength">
+          <option value="relaxed">Locker</option>
+          <option value="matched" selected>Passend zum Video</option>
+          <option value="boosted">Verstärkt</option>
+        </select>
+      </label>
+      <button id="analyzeLocalVideo" type="button" class="local-video-banner">
+        <span class="video-icon" aria-hidden="true">◆</span>
+        <span><strong>VIDEO-CHALLENGE ERSTELLEN</strong><small>Video lokal analysieren und passenden Ablauf erzeugen</small></span>
+        <span class="banner-arrow" aria-hidden="true">›</span>
+      </button>
+      <p class="online-video-status" id="videoAnalysisStatus" role="status">Bereit zur lokalen Analyse. Das Video wird nicht hochgeladen.</p>
     </section>
 
     <section class="archive card">
@@ -1704,6 +1759,8 @@
       pendingUpdateApk: "",
       audioContext: null,
       metronomeId: null,
+      speedTestId: null,
+      speedTestMode: "",
       voiceClipTimerId: null,
       playAssistantVoiceOnStart: false,
       pauseAfterRounds: null,
@@ -1752,6 +1809,11 @@
       challengeVoiceEnabled: document.getElementById("challengeVoiceEnabled"),
       metronomeBpm: document.getElementById("metronomeBpm"),
       metronomeVolume: document.getElementById("metronomeVolume"),
+      speedTestList: document.getElementById("speedTestList"),
+      speedTestVolume: document.getElementById("speedTestVolume"),
+      speedTestBpm: document.getElementById("speedTestBpm"),
+      stopSpeedTest: document.getElementById("stopSpeedTest"),
+      speedTestStatus: document.getElementById("speedTestStatus"),
       alarmEnabled: document.getElementById("alarmEnabled"),
       alarmVolume: document.getElementById("alarmVolume"),
       modeList: document.getElementById("modeList"),
@@ -1783,6 +1845,9 @@
       onlineVideoStatus: document.getElementById("onlineVideoStatus"),
       openLocalVideo: document.getElementById("openLocalVideo"),
       localVideoStatus: document.getElementById("localVideoStatus"),
+      analyzeLocalVideo: document.getElementById("analyzeLocalVideo"),
+      videoAnalysisStatus: document.getElementById("videoAnalysisStatus"),
+      videoChallengeStrength: document.getElementById("videoChallengeStrength"),
       installBox: document.getElementById("installBox"),
       installButton: document.getElementById("installButton"),
       authGate: document.getElementById("authGate"),
@@ -2244,6 +2309,7 @@
         challengeTextEnabled: state.challengeTextEnabled,
         challengeVoiceEnabled: state.challengeVoiceEnabled,
         videoOverlayPosition: els.videoOverlayPosition.value,
+        videoChallengeStrength: els.videoChallengeStrength.value,
         flowName: state.flowName,
         flowType: state.flowType,
         pauseAfterRounds: state.pauseAfterRounds,
@@ -2282,6 +2348,7 @@
         challengeTextEnabled: state.challengeTextEnabled,
         challengeVoiceEnabled: state.challengeVoiceEnabled,
         videoOverlayPosition: els.videoOverlayPosition.value,
+        videoChallengeStrength: els.videoChallengeStrength.value,
         flowName: state.flowName,
         flowType: state.flowType,
         pauseAfterRounds: state.pauseAfterRounds,
@@ -2306,6 +2373,9 @@
       els.challengeVoiceEnabled.value = String(state.challengeVoiceEnabled);
       if (config.videoOverlayPosition === "left" || config.videoOverlayPosition === "right") {
         els.videoOverlayPosition.value = config.videoOverlayPosition;
+      }
+      if (["relaxed", "matched", "boosted"].includes(config.videoChallengeStrength)) {
+        els.videoChallengeStrength.value = config.videoChallengeStrength;
       }
       state.flowName = config.flowName || "Eigener Ablauf";
       state.flowType = config.flowType || "custom";
@@ -2366,6 +2436,9 @@
         els.challengeVoiceEnabled.value = String(state.challengeVoiceEnabled);
         if (settings.videoOverlayPosition === "left" || settings.videoOverlayPosition === "right") {
           els.videoOverlayPosition.value = settings.videoOverlayPosition;
+        }
+        if (["relaxed", "matched", "boosted"].includes(settings.videoChallengeStrength)) {
+          els.videoChallengeStrength.value = settings.videoChallengeStrength;
         }
         state.flowName = settings.flowName || "Eigener Ablauf";
         state.flowType = settings.flowType || "custom";
@@ -2447,6 +2520,40 @@
       if (/slow|langsam/.test(keyword)) return 50;
       if (/normal/.test(keyword)) return 70;
       return null;
+    }
+
+    function stopSpeedTest() {
+      if (state.speedTestId) window.clearInterval(state.speedTestId);
+      state.speedTestId = null;
+      els.speedTestList.querySelectorAll("button").forEach((button) => {
+        button.classList.remove("active");
+        button.textContent = "TEST";
+      });
+      els.speedTestStatus.textContent = state.speedTestMode
+        ? `${state.speedTestMode} · Test gestoppt.`
+        : "Stufe auswählen und anhören.";
+    }
+
+    function updateSpeedTestInfo(mode = state.speedTestMode || "Normal") {
+      const bpm = suggestedBpmForName(mode) || 70;
+      els.speedTestBpm.textContent = `${bpm} BPM`;
+      return bpm;
+    }
+
+    function startSpeedTest(mode) {
+      stopSpeedTest();
+      state.speedTestMode = mode;
+      const bpm = updateSpeedTestInfo(mode);
+      const volume = readNumber(els.speedTestVolume, 60) / 100 * 0.24;
+      const beat = () => tone(1200, 0.045, volume);
+      beat();
+      state.speedTestId = window.setInterval(beat, 60000 / bpm);
+      els.speedTestStatus.textContent = `${mode} läuft mit ${bpm} BPM.`;
+      const activeButton = els.speedTestList.querySelector(`[data-speed-test="${CSS.escape(mode)}"]`);
+      if (activeButton) {
+        activeButton.classList.add("active");
+        activeButton.textContent = "LÄUFT";
+      }
     }
 
     function currentMetronomeBpm() {
@@ -2648,6 +2755,7 @@
     }
 
     function closeMenu() {
+      stopSpeedTest();
       if (!els.assistantVoice.paused) {
         els.assistantVoice.pause();
         els.assistantVoice.currentTime = 0;
@@ -2671,6 +2779,20 @@
       els.assistantVoice.currentTime = 0;
       els.assistantVoiceStatus.textContent = "Wiedergabe gestoppt.";
     });
+    els.stopSpeedTest.addEventListener("click", stopSpeedTest);
+    els.speedTestList.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-speed-test]");
+      if (!button) return;
+      const mode = button.dataset.speedTest;
+      if (state.speedTestId && state.speedTestMode === mode) {
+        stopSpeedTest();
+      } else {
+        startSpeedTest(mode);
+      }
+    });
+    els.speedTestVolume.addEventListener("input", () => {
+      if (state.speedTestId) startSpeedTest(state.speedTestMode);
+    });
     els.assistantVoice.addEventListener("ended", () => {
       els.assistantVoiceStatus.textContent = "Vorschau beendet.";
     });
@@ -2693,6 +2815,7 @@
       return {
         url,
         position: els.videoOverlayPosition.value,
+        challengeStrength: els.videoChallengeStrength.value,
         restSeconds: restSeconds(),
         pauseEvery: pauseEveryRounds(),
         pauseAfterRounds: state.pauseAfterRounds,
@@ -2728,7 +2851,23 @@
       els.localVideoStatus.textContent = "Android-Dateiauswahl wird geöffnet ...";
       window.AstraVideo.openLocal(JSON.stringify(buildVideoPayload()));
     });
+    els.analyzeLocalVideo.addEventListener("click", () => {
+      if (!window.AstraVideo || typeof window.AstraVideo.analyzeLocal !== "function") {
+        els.videoAnalysisStatus.textContent = "Die Videoanalyse ist nur in der installierten Android-App verfügbar.";
+        return;
+      }
+      saveSettings();
+      els.videoAnalysisStatus.textContent = "Video für die Analyse auswählen ...";
+      window.AstraVideo.analyzeLocal(JSON.stringify(buildVideoPayload()));
+    });
+    window.astraVideoAnalysisResult = (result) => {
+      if (!els.videoAnalysisStatus) return;
+      els.videoAnalysisStatus.textContent = result && result.ok
+        ? `Profil erkannt: ${result.profile}. Challenge mit ${result.blocks} Blöcken gespeichert.`
+        : `Analyse fehlgeschlagen: ${(result && result.error) || "Unbekannter Fehler"}`;
+    };
     els.videoOverlayPosition.addEventListener("change", saveSettings);
+    els.videoChallengeStrength.addEventListener("change", saveSettings);
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") closeMenu();
     });

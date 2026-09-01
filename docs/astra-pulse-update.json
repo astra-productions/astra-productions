@@ -1,6 +1,6 @@
 {
-  "versionCode": 24,
-  "versionName": "3.3",
-  "apkUrl": "https://astra-productions.github.io/astra-productions/downloads/AstraPulse-3.3.apk",
-  "notes": "Langes Drücken auf den Video-Timer öffnet getrennte Lautstärkeregler für Video und Metronom."
+  "versionCode": 27,
+  "versionName": "3.6",
+  "apkUrl": "https://astra-productions.github.io/astra-productions/downloads/AstraPulse-3.6.apk",
+  "notes": "Neuer Geschwindigkeitstest im Menü mit allen Stufen, BPM-Anzeige, Lautstärke und separaten Testbuttons."
 }

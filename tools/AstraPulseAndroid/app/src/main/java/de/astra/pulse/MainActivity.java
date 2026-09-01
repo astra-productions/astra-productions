@@ -1,6 +1,8 @@
 package de.astra.pulse;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -20,12 +22,17 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 
 import org.json.JSONObject;
+import org.json.JSONArray;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -33,6 +40,7 @@ public class MainActivity extends FragmentActivity {
     private static final int REQUEST_LOCAL_VIDEO = 2048;
     private WebView webView;
     private String pendingVideoConfig;
+    private boolean pendingVideoAnalysis;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     @Override
@@ -102,11 +110,16 @@ public class MainActivity extends FragmentActivity {
         try {
             JSONObject config = new JSONObject(pendingVideoConfig == null ? "{}" : pendingVideoConfig);
             config.put("url", videoUri.toString());
-            launchVideo(config.toString());
+            if (pendingVideoAnalysis) {
+                analyzeVideo(videoUri, config);
+            } else {
+                launchVideo(config.toString());
+            }
         } catch (Exception error) {
             Toast.makeText(this, "Das ausgewählte Video konnte nicht geöffnet werden.", Toast.LENGTH_LONG).show();
         } finally {
             pendingVideoConfig = null;
+            pendingVideoAnalysis = false;
         }
     }
 
@@ -157,20 +170,213 @@ public class MainActivity extends FragmentActivity {
                 try {
                     new JSONObject(payload);
                     pendingVideoConfig = payload;
-                    Intent picker;
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        picker = new Intent(MediaStore.ACTION_PICK_IMAGES);
-                    } else {
-                        picker = new Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
-                    }
-                    picker.setType("video/*");
-                    picker.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                    startActivityForResult(picker, REQUEST_LOCAL_VIDEO);
+                    pendingVideoAnalysis = false;
+                    openVideoPicker();
                 } catch (Exception error) {
                     Toast.makeText(MainActivity.this, "Die Videoauswahl konnte nicht geöffnet werden.", Toast.LENGTH_LONG).show();
                 }
             });
         }
+
+        @JavascriptInterface
+        public void analyzeLocal(String payload) {
+            runOnUiThread(() -> {
+                try {
+                    new JSONObject(payload);
+                    pendingVideoConfig = payload;
+                    pendingVideoAnalysis = true;
+                    openVideoPicker();
+                } catch (Exception error) {
+                    Toast.makeText(MainActivity.this, "Die Videoanalyse konnte nicht gestartet werden.", Toast.LENGTH_LONG).show();
+                }
+            });
+        }
+    }
+
+    private void openVideoPicker() {
+        Intent picker;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            picker = new Intent(MediaStore.ACTION_PICK_IMAGES);
+        } else {
+            picker = new Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
+        }
+        picker.setType("video/*");
+        picker.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        startActivityForResult(picker, REQUEST_LOCAL_VIDEO);
+    }
+
+    private void analyzeVideo(Uri videoUri, JSONObject baseConfig) {
+        Toast.makeText(this, "Video wird lokal analysiert ...", Toast.LENGTH_LONG).show();
+        executor.execute(() -> {
+            MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+            try {
+                String cacheKey = "analysis_v2_" + sha256(videoUri.toString());
+                String cached = getSharedPreferences("astra_video_analyses", MODE_PRIVATE).getString(cacheKey, null);
+                JSONObject analysis;
+                if (cached != null) {
+                    analysis = new JSONObject(cached);
+                } else {
+                    retriever.setDataSource(MainActivity.this, videoUri);
+                    long durationMs = Long.parseLong(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION));
+                    analysis = buildVideoAnalysis(retriever, durationMs);
+                    getSharedPreferences("astra_video_analyses", MODE_PRIVATE)
+                            .edit().putString(cacheKey, analysis.toString()).apply();
+                }
+                String strength = baseConfig.optString("challengeStrength", "matched");
+                JSONArray generatedModes = generateModes(analysis, strength);
+                baseConfig.put("url", videoUri.toString());
+                baseConfig.put("modes", generatedModes);
+                String profile = analysis.getString("profile");
+                int blocks = generatedModes.length();
+                runJs("window.astraVideoAnalysisResult({ok:true,profile:" + quote(profile)
+                        + ",blocks:" + blocks + "});");
+                runOnUiThread(() -> {
+                    Toast.makeText(MainActivity.this, "Profil erkannt: " + profile, Toast.LENGTH_LONG).show();
+                    launchVideo(baseConfig.toString());
+                });
+            } catch (Exception error) {
+                runJs("window.astraVideoAnalysisResult({ok:false,error:" + quote(error.getMessage()) + "});");
+                runOnUiThread(() -> Toast.makeText(MainActivity.this,
+                        "Videoanalyse fehlgeschlagen: " + error.getMessage(), Toast.LENGTH_LONG).show());
+            } finally {
+                try {
+                    retriever.release();
+                } catch (Exception ignored) {
+                }
+            }
+        });
+    }
+
+    private JSONObject buildVideoAnalysis(MediaMetadataRetriever retriever, long durationMs) throws Exception {
+        int sampleSeconds = durationMs > 30 * 60_000L ? 5 : durationMs > 10 * 60_000L ? 3 : 2;
+        long stepUs = sampleSeconds * 1_000_000L;
+        List<Double> activity = new ArrayList<>();
+        int[] previous = null;
+        for (long timeUs = 0; timeUs < durationMs * 1000L; timeUs += stepUs) {
+            Bitmap frame = retriever.getFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
+            if (frame == null) continue;
+            Bitmap small = Bitmap.createScaledBitmap(frame, 24, 14, true);
+            if (small != frame) frame.recycle();
+            int[] pixels = new int[24 * 14];
+            small.getPixels(pixels, 0, 24, 0, 0, 24, 14);
+            small.recycle();
+            if (previous != null) activity.add(frameDifference(previous, pixels));
+            previous = pixels;
+        }
+        if (activity.isEmpty()) throw new IllegalStateException("Das Video enthält zu wenige analysierbare Bilder.");
+
+        List<Double> sorted = new ArrayList<>(activity);
+        Collections.sort(sorted);
+        double average = 0;
+        for (double value : activity) average += value;
+        average /= activity.size();
+        double peak = sorted.get(Math.min(sorted.size() - 1, (int) (sorted.size() * 0.9)));
+        double profileScore = average * 0.65 + peak * 0.35;
+        String profile = profileScore < 0.035 ? "Soft"
+                : profileScore < 0.065 ? "Moderat"
+                : profileScore < 0.11 ? "Dynamisch"
+                : profileScore < 0.18 ? "Intensiv" : "Sehr intensiv";
+
+        JSONArray activityValues = new JSONArray();
+        for (double value : activity) activityValues.put(value);
+        JSONObject result = new JSONObject();
+        result.put("profile", profile);
+        result.put("profileScore", profileScore);
+        result.put("durationMs", durationMs);
+        result.put("sampleSeconds", sampleSeconds);
+        result.put("activity", activityValues);
+        return result;
+    }
+
+    private JSONArray generateModes(JSONObject analysis, String strength) throws Exception {
+        JSONArray activitySource = analysis.getJSONArray("activity");
+        int sampleSeconds = analysis.getInt("sampleSeconds");
+        long durationSeconds = Math.max(1, analysis.getLong("durationMs") / 1000L);
+        long warmupSeconds = Math.min(90, Math.max(20, Math.round(durationSeconds * 0.08)));
+        double profileScore = analysis.getDouble("profileScore");
+        double strengthOffset = "relaxed".equals(strength) ? -0.035
+                : "boosted".equals(strength) ? 0.04 : 0;
+        JSONArray modes = new JSONArray();
+        String lastName = null;
+        String previousSpeed = null;
+        int accumulated = 0;
+        for (int index = 0; index < activitySource.length(); index++) {
+            double value = activitySource.getDouble(index);
+            double smoothed = value;
+            if (index > 0) smoothed = (activitySource.getDouble(index - 1) + value * 2) / 3;
+            long elapsedSeconds = (long) index * sampleSeconds;
+            String name;
+            if (elapsedSeconds < warmupSeconds / 2) {
+                name = "Slow";
+            } else if (elapsedSeconds < warmupSeconds) {
+                name = "Normal";
+            } else {
+                name = speedForActivity(smoothed + strengthOffset, profileScore);
+                name = limitSpeedStep(previousSpeed, name);
+            }
+            previousSpeed = name;
+            if (name.equals(lastName)) {
+                accumulated += sampleSeconds;
+            } else {
+                if (lastName != null) modes.put(modeJson(lastName, accumulated));
+                lastName = name;
+                accumulated = sampleSeconds;
+            }
+        }
+        if (lastName != null) modes.put(modeJson(lastName, accumulated));
+        return modes;
+    }
+
+    private String limitSpeedStep(String previous, String requested) {
+        String[] speeds = {"Slow", "Normal", "Fast", "Faster", "Super fast", "Speed", "Super Speed", "Ultraspeed"};
+        if (previous == null) return requested;
+        int previousIndex = 0;
+        int requestedIndex = 0;
+        for (int index = 0; index < speeds.length; index++) {
+            if (speeds[index].equals(previous)) previousIndex = index;
+            if (speeds[index].equals(requested)) requestedIndex = index;
+        }
+        if (requestedIndex > previousIndex + 1) requestedIndex = previousIndex + 1;
+        if (requestedIndex < previousIndex - 2) requestedIndex = previousIndex - 2;
+        return speeds[Math.max(0, Math.min(speeds.length - 1, requestedIndex))];
+    }
+
+    private double frameDifference(int[] first, int[] second) {
+        long difference = 0;
+        for (int index = 0; index < first.length; index++) {
+            int a = first[index];
+            int b = second[index];
+            difference += Math.abs(((a >> 16) & 255) - ((b >> 16) & 255));
+            difference += Math.abs(((a >> 8) & 255) - ((b >> 8) & 255));
+            difference += Math.abs((a & 255) - (b & 255));
+        }
+        return difference / (double) (first.length * 3 * 255);
+    }
+
+    private String speedForActivity(double activity, double profileScore) {
+        double adjusted = activity + profileScore * 0.35;
+        if (adjusted < 0.035) return "Slow";
+        if (adjusted < 0.06) return "Normal";
+        if (adjusted < 0.085) return "Fast";
+        if (adjusted < 0.115) return "Faster";
+        if (adjusted < 0.15) return "Super fast";
+        if (adjusted < 0.19) return "Speed";
+        if (adjusted < 0.24) return "Super Speed";
+        return "Ultraspeed";
+    }
+
+    private JSONObject modeJson(String name, int seconds) throws Exception {
+        JSONObject mode = new JSONObject();
+        mode.put("name", name);
+        mode.put("seconds", Math.max(2, seconds));
+        return mode;
+    }
+
+    private String sha256(String value) throws Exception {
+        byte[] digest = MessageDigest.getInstance("SHA-256").digest(value.getBytes("UTF-8"));
+        StringBuilder result = new StringBuilder();
+        for (byte item : digest) result.append(String.format("%02x", item));
+        return result.toString();
     }
 
     private void showBiometricPrompt() {
