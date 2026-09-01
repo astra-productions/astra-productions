@@ -9,6 +9,7 @@
   let approvalId = sessionStorage.getItem("astra-cloud-approval-id") || "";
   let browserSessionId = sessionStorage.getItem("astra-cloud-browser-id") || "";
   let expiresAt = sessionStorage.getItem("astra-cloud-code-expires") || "";
+  let sessionToken = sessionStorage.getItem("astra-cloud-session-token") || "";
   let countdownId = 0;
 
   const style = document.createElement("style");
@@ -24,6 +25,13 @@
     .cloud-code { font-size:2rem; letter-spacing:.18em; text-align:center; font-weight:900; color:#fff; text-shadow:0 0 16px #ff58d3; margin:12px 0 4px; }
     .cloud-request { border:1px solid rgba(255,102,209,.25); padding:10px; margin-top:10px; }
     .cloud-request strong { display:block; margin-bottom:7px; }
+    .cloud-devices { margin-top:14px; border:1px solid rgba(112,211,255,.28); }
+    .cloud-devices summary { cursor:pointer; padding:13px 14px; font-weight:900; color:#f7eefa; list-style:none; }
+    .cloud-devices summary::after { content:"+"; float:right; color:#ff72cf; }
+    .cloud-devices[open] summary::after { content:"−"; }
+    .cloud-devices-body { padding:0 12px 12px; }
+    .cloud-device { display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center; padding:10px 0; border-top:1px solid rgba(255,255,255,.09); }
+    .cloud-device small { display:block; margin-top:3px; color:#bca9bd; }
     .cloud-hidden { display:none !important; }
     @media (max-width:600px) { .cloud-grid { grid-template-columns:1fr; } }
   `;
@@ -66,6 +74,13 @@
           <p class="cloud-status" id="cloudCountdown"></p>
         </div>
       </div>
+      <details class="cloud-devices cloud-hidden" id="cloudDevicesPanel">
+        <summary>VERBUNDENE GERÄTE</summary>
+        <div class="cloud-devices-body">
+          <div class="cloud-actions"><button id="cloudLoadDevices" type="button">GERÄTE AKTUALISIEREN</button></div>
+          <div id="cloudDeviceList"><p class="cloud-status">Noch nicht geladen.</p></div>
+        </div>
+      </details>
       <p class="cloud-status" id="cloudStatus"></p>
     `;
     localProfile.insertAdjacentElement("afterend", card);
@@ -128,6 +143,7 @@
     card.querySelector("#cloudLogout").classList.toggle("cloud-hidden", !signedIn);
     card.querySelector("#cloudAndroid").classList.toggle("cloud-hidden", !signedIn || !isAndroid);
     card.querySelector("#cloudWeb").classList.toggle("cloud-hidden", !signedIn || isAndroid);
+    card.querySelector("#cloudDevicesPanel").classList.toggle("cloud-hidden", !signedIn);
     card.querySelector("#cloudVerifyBox").classList.toggle("cloud-hidden", !approvalId || isAndroid);
     if (signedIn) status(card, isAndroid ? "Cloud angemeldet. Gerät verbinden oder offene Anfrage laden." : "Passwort bestätigt. Fordere jetzt den App-Code an.");
     updateCountdown(card);
@@ -171,6 +187,34 @@
     });
   }
 
+  function deviceAccess() {
+    return isAndroid ? { deviceSecret: deviceSecret() } : { sessionToken };
+  }
+
+  function renderDevices(card, devices) {
+    const host = card.querySelector("#cloudDeviceList");
+    host.innerHTML = "";
+    if (!devices.length) {
+      host.innerHTML = '<p class="cloud-status">Keine verbundenen Geräte.</p>';
+      return;
+    }
+    devices.forEach((device) => {
+      const row = document.createElement("div");
+      row.className = "cloud-device";
+      const lastSeen = device.last_seen_at ? new Date(device.last_seen_at).toLocaleString("de-DE") : "Noch nie";
+      row.innerHTML = `<div><strong>${String(device.device_name || "Android-Gerät").replace(/[<>]/g, "")}</strong><small>Verbunden: ${new Date(device.created_at).toLocaleDateString("de-DE")} · Zuletzt aktiv: ${lastSeen}</small></div><button type="button" class="danger">TRENNEN</button>`;
+      row.querySelector("button").addEventListener("click", async () => {
+        if (!confirm("Dieses Gerät wirklich von Astra Cloud trennen?")) return;
+        try {
+          const result = await invoke("revoke-device", { deviceId: device.id, ...deviceAccess() });
+          renderDevices(card, result.devices || []);
+          status(card, "Gerät wurde getrennt.");
+        } catch (error) { status(card, error.message, true); }
+      });
+      host.append(row);
+    });
+  }
+
   function bind(card) {
     card.querySelector("#cloudLogin").addEventListener("click", async () => {
       const email = card.querySelector("#cloudEmail").value.trim();
@@ -185,8 +229,8 @@
     });
 
     card.querySelector("#cloudLogout").addEventListener("click", () => {
-      accessToken = approvalId = expiresAt = "";
-      ["astra-cloud-access-token", "astra-cloud-approval-id", "astra-cloud-code-expires"].forEach((key) => sessionStorage.removeItem(key));
+      accessToken = approvalId = expiresAt = sessionToken = "";
+      ["astra-cloud-access-token", "astra-cloud-approval-id", "astra-cloud-code-expires", "astra-cloud-session-token"].forEach((key) => sessionStorage.removeItem(key));
       updateSignedInState(card);
       status(card, "Cloud abgemeldet.");
     });
@@ -205,6 +249,15 @@
         const result = await invoke("pending", { deviceSecret: deviceSecret() });
         renderRequests(card, result.approvals || []);
         status(card, "Anfragen aktualisiert.");
+      } catch (error) { status(card, error.message, true); }
+    });
+
+    card.querySelector("#cloudLoadDevices").addEventListener("click", async () => {
+      status(card, "Verbundene Geräte werden geladen …");
+      try {
+        const result = await invoke("devices", deviceAccess());
+        renderDevices(card, result.devices || []);
+        status(card, "Geräteliste aktualisiert.");
       } catch (error) { status(card, error.message, true); }
     });
 
@@ -230,7 +283,8 @@
           code: card.querySelector("#cloudCode").value.trim(),
           deviceName: navigator.userAgent.slice(0, 80)
         });
-        sessionStorage.setItem("astra-cloud-session-token", result.sessionToken);
+        sessionToken = result.sessionToken;
+        sessionStorage.setItem("astra-cloud-session-token", sessionToken);
         approvalId = expiresAt = "";
         sessionStorage.removeItem("astra-cloud-approval-id");
         sessionStorage.removeItem("astra-cloud-code-expires");

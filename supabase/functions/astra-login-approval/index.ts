@@ -103,6 +103,50 @@ export default {
         return device;
       };
 
+      const requireCloudSession = async (tokenValue: unknown) => {
+        const token = String(tokenValue ?? "");
+        if (token.length < 40) return null;
+        const tokenHash = await digest(`session:${token}`);
+        const { data, error } = await admin
+          .from("cloud_sessions")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("token_hash", tokenHash)
+          .is("revoked_at", null)
+          .gt("expires_at", new Date().toISOString())
+          .maybeSingle();
+        if (error) throw error;
+        if (!data) return null;
+        await admin.from("cloud_sessions")
+          .update({ last_seen_at: new Date().toISOString() })
+          .eq("id", data.id);
+        return data;
+      };
+
+      if (action === "devices" || action === "revoke-device") {
+        const allowed = await requireDevice(body?.deviceSecret) ||
+          await requireCloudSession(body?.sessionToken);
+        if (!allowed) return json({ error: "Verified session required" }, 403);
+
+        if (action === "revoke-device") {
+          if (!validUuid(body?.deviceId)) return json({ error: "Invalid device" }, 400);
+          const { error } = await admin.from("trusted_devices")
+            .update({ revoked_at: new Date().toISOString() })
+            .eq("id", body.deviceId)
+            .eq("user_id", userId)
+            .is("revoked_at", null);
+          if (error) throw error;
+        }
+
+        const { data, error } = await admin.from("trusted_devices")
+          .select("id, device_name, created_at, last_seen_at")
+          .eq("user_id", userId)
+          .is("revoked_at", null)
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        return json({ devices: data ?? [] });
+      }
+
       if (action === "request") {
         if (!validUuid(body?.browserSessionId)) return json({ error: "Invalid browser session" }, 400);
         const now = Date.now();
@@ -222,8 +266,26 @@ export default {
 
       return json({ error: "Unknown action" }, 400);
     } catch (error) {
-      console.error(error);
-      return json({ error: "Internal server error" }, 500);
+      const failure = error as {
+        name?: string;
+        message?: string;
+        code?: string;
+        details?: string;
+        hint?: string;
+        stack?: string;
+      };
+      console.error(JSON.stringify({
+        name: failure?.name ?? "UnknownError",
+        message: failure?.message ?? String(error),
+        code: failure?.code ?? null,
+        details: failure?.details ?? null,
+        hint: failure?.hint ?? null,
+        stack: failure?.stack ?? null,
+      }));
+      return json({
+        error: "Internal server error",
+        reference: failure?.code ?? "EDGE_FAILURE",
+      }, 500);
     }
   }),
 };

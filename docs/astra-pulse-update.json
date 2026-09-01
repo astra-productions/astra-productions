@@ -1,6 +1,6 @@
 {
-  "versionCode": 28,
-  "versionName": "3.7",
-  "apkUrl": "https://astra-productions.github.io/astra-productions/downloads/AstraPulse-3.7.apk",
-  "notes": "Freiwillige Astra-Cloud-Anmeldung mit geschützter Android-Geräteregistrierung und fünf Minuten gültigem Web-Bestätigungscode."
+  "versionCode": 29,
+  "versionName": "3.8",
+  "apkUrl": "https://astra-productions.github.io/astra-productions/downloads/AstraPulse-3.8.apk",
+  "notes": "Astra Cloud zeigt verbundene Geräte mit Registrierung, letzter Aktivität und sicherer Trennfunktion."
 }
