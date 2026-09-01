@@ -1,10 +1,10 @@
-const CACHE_NAME = "astra-pulse-web-v23";
+const CACHE_NAME = "astra-intervall-timer-v21";
 const ASSETS = [
   "./",
-  "index.html",
   "IntervallTimer.html",
   "manifest.webmanifest",
   "intervall-icon.svg",
+  "cloud-account.js",
   "astra-assistant-voice.mp3"
 ];
 
@@ -25,23 +25,7 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  const request = event.request;
-  const isPageRequest = request.mode === "navigate" || request.headers.get("accept")?.includes("text/html");
-
-  if (isPageRequest) {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-          return response;
-        })
-        .catch(() => caches.match(request).then((cached) => cached || caches.match("index.html")))
-    );
-    return;
-  }
-
   event.respondWith(
-    caches.match(request).then((cached) => cached || fetch(request))
+    caches.match(event.request).then((cached) => cached || fetch(event.request))
   );
 });

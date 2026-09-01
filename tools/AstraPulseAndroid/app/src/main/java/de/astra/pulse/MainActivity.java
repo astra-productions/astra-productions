@@ -1,6 +1,8 @@
 package de.astra.pulse;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
@@ -8,6 +10,9 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.provider.Settings;
+import android.security.keystore.KeyGenParameterSpec;
+import android.security.keystore.KeyProperties;
+import android.util.Base64;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
@@ -29,15 +34,24 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.security.KeyStore;
 import java.security.MessageDigest;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.GCMParameterSpec;
+
 public class MainActivity extends FragmentActivity {
     private static final int REQUEST_LOCAL_VIDEO = 2048;
+    private static final String CLOUD_KEY_ALIAS = "astra-pulse-cloud-device-v1";
+    private static final String CLOUD_PREFS = "astra-pulse-cloud-security";
     private WebView webView;
     private String pendingVideoConfig;
     private boolean pendingVideoAnalysis;
@@ -59,6 +73,7 @@ public class MainActivity extends FragmentActivity {
 
         webView.addJavascriptInterface(new UpdateBridge(), "AstraUpdater");
         webView.addJavascriptInterface(new BiometricBridge(), "AstraBiometric");
+        webView.addJavascriptInterface(new CloudBridge(), "AstraCloud");
         webView.addJavascriptInterface(new VideoBridge(), "AstraVideo");
         webView.setWebViewClient(new WebViewClient() {
             private boolean handleBiometricUrl(Uri uri) {
@@ -438,6 +453,73 @@ public class MainActivity extends FragmentActivity {
         @JavascriptInterface
         public void authenticate() {
             showBiometricPrompt();
+        }
+    }
+
+    private SecretKey cloudEncryptionKey() throws Exception {
+        KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
+        keyStore.load(null);
+        if (keyStore.containsAlias(CLOUD_KEY_ALIAS)) {
+            return ((KeyStore.SecretKeyEntry) keyStore.getEntry(CLOUD_KEY_ALIAS, null)).getSecretKey();
+        }
+
+        KeyGenerator generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore");
+        generator.init(new KeyGenParameterSpec.Builder(
+                CLOUD_KEY_ALIAS,
+                KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT
+        ).setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                .setKeySize(256)
+                .build());
+        return generator.generateKey();
+    }
+
+    private String createCloudDeviceSecret() {
+        byte[] secret = new byte[32];
+        new SecureRandom().nextBytes(secret);
+        return Base64.encodeToString(secret, Base64.NO_WRAP | Base64.URL_SAFE);
+    }
+
+    private synchronized String cloudDeviceSecret() throws Exception {
+        SharedPreferences prefs = getSharedPreferences(CLOUD_PREFS, Context.MODE_PRIVATE);
+        String encrypted = prefs.getString("device_secret", null);
+        String encodedIv = prefs.getString("device_secret_iv", null);
+        SecretKey key = cloudEncryptionKey();
+
+        if (encrypted != null && encodedIv != null) {
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            cipher.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(
+                    128,
+                    Base64.decode(encodedIv, Base64.NO_WRAP)
+            ));
+            byte[] clear = cipher.doFinal(Base64.decode(encrypted, Base64.NO_WRAP));
+            return new String(clear, java.nio.charset.StandardCharsets.UTF_8);
+        }
+
+        String secret = createCloudDeviceSecret();
+        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+        cipher.init(Cipher.ENCRYPT_MODE, key);
+        byte[] encryptedBytes = cipher.doFinal(secret.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        prefs.edit()
+                .putString("device_secret", Base64.encodeToString(encryptedBytes, Base64.NO_WRAP))
+                .putString("device_secret_iv", Base64.encodeToString(cipher.getIV(), Base64.NO_WRAP))
+                .apply();
+        return secret;
+    }
+
+    public class CloudBridge {
+        @JavascriptInterface
+        public boolean isAndroidApp() {
+            return true;
+        }
+
+        @JavascriptInterface
+        public String getOrCreateDeviceSecret() {
+            try {
+                return cloudDeviceSecret();
+            } catch (Exception error) {
+                return "";
+            }
         }
     }
 

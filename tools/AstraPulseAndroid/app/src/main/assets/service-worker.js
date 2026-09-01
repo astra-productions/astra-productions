@@ -1,9 +1,10 @@
-const CACHE_NAME = "astra-intervall-timer-v20";
+const CACHE_NAME = "astra-intervall-timer-v21";
 const ASSETS = [
   "./",
   "IntervallTimer.html",
   "manifest.webmanifest",
   "intervall-icon.svg",
+  "cloud-account.js",
   "astra-assistant-voice.mp3"
 ];
 

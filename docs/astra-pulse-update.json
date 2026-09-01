@@ -1,6 +1,6 @@
 {
-  "versionCode": 27,
-  "versionName": "3.6",
-  "apkUrl": "https://astra-productions.github.io/astra-productions/downloads/AstraPulse-3.6.apk",
-  "notes": "Neuer Geschwindigkeitstest im Menü mit allen Stufen, BPM-Anzeige, Lautstärke und separaten Testbuttons."
+  "versionCode": 28,
+  "versionName": "3.7",
+  "apkUrl": "https://astra-productions.github.io/astra-productions/downloads/AstraPulse-3.7.apk",
+  "notes": "Freiwillige Astra-Cloud-Anmeldung mit geschützter Android-Geräteregistrierung und fünf Minuten gültigem Web-Bestätigungscode."
 }
