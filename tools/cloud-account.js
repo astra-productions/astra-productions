@@ -32,6 +32,11 @@
   function mount() {
     const localProfile = document.getElementById("localProfile");
     if (!localProfile || document.getElementById("cloudProfile")) return;
+    if (!isAndroid) {
+      const authGate = document.getElementById("authGate");
+      if (authGate) authGate.hidden = true;
+      localProfile.classList.add("cloud-hidden");
+    }
     const card = document.createElement("section");
     card.id = "cloudProfile";
     card.className = "cloud-profile local-profile card";
@@ -66,6 +71,9 @@
     localProfile.insertAdjacentElement("afterend", card);
     bind(card);
     updateSignedInState(card);
+    if (!isAndroid && !accessToken) {
+      window.setTimeout(() => document.getElementById("openSettings")?.click(), 0);
+    }
   }
 
   function status(card, message, error = false) {
